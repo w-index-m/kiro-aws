@@ -198,7 +198,7 @@ Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot c
 | `07_AWS_WAFとKiro調査/docs/AWS_WAFとKiro調査.pptx` / `.pdf` | 調査スライド(42 枚) |
 | `07_AWS_WAFとKiro調査/design/AWS_WAF_方式設計書_サンプル.xlsx` / `.md` | WAF 方式設計書(v1.3) |
 | `07_AWS_WAFとKiro調査/design/AWS_WAF_画面一覧_入力サンプル.xlsx` | WAF 設定画面の入力サンプル |
-| `07_AWS_WAFとKiro調査/terraform/` | `02` の構成の Terraform(VPC・Network Firewall・エッジルート・SG・DX・WAF。`terraform.tfvars` が `02` のパラメータシートに対応。未検証) |
+| `07_AWS_WAFとKiro調査/terraform/` | `02` の構成の Terraform(VPC・Network Firewall・エッジルート・SG・DX・WAF。`terraform.tfvars` が `02` のパラメータシートに対応。validate 成功・オフライン plan 確認済み) |
 | `07_AWS_WAFとKiro調査/tools/` | スライド生成 `make_deck.js`、設計書生成 `build_waf_design.py` |
 
 `make_deck.js` は pptxgenjs と pptx スキル(`PPTX_SKILL` で場所を指定)が必要です。画像は `tools/kiroimg/` に同梱(スライド 23〜30 の Kiro 公式スクリーンショット。公開時は利用条件を確認)。
