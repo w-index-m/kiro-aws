@@ -22,12 +22,12 @@
    /index.html -> dd-web2
    /api/items  -> dd-api1
    ```
-4. `tools/design_docs/alb_design_docs.py` で、describe の出力から設計書を作った:
+4. `道具/alb_design_docs.py` で、describe の出力から設計書を作った:
    ```bash
-   python3 tools/design_docs/alb_design_docs.py --lab http://127.0.0.1:8000 --device DD-ALB --out docs/design-samples/shop-alb
+   python3 道具/alb_design_docs.py --lab http://127.0.0.1:8000 --device DD-ALB --out 出力
    ```
 
-## できたもの(`docs/design-samples/shop-alb/`)
+## できたもの(`出力/`)
 
 | ファイル | 中身 |
 |---|---|

@@ -1,13 +1,13 @@
 # 模擬 IPCOM の設定 → AWS Network Firewall(下書き・対応表・確認用の通信)
 
 Kiro の資料 28・29 枚目「今の firewall から Network Firewall を作れる?」を、このラボで実際にやってみた記録です。
-道具は `tools/fw_migrate/ipcom_to_nfw.py`、元にした模擬設定は `tools/fw_migrate/samples/ipcom-mock.conf`、
-出力の見本は `docs/fw-migrate-samples/ipcom-hq/` です。
+道具は `道具/ipcom_to_nfw.py`、元にした模擬設定は `道具/ipcom-mock.conf`、
+出力の見本は `出力/` です。
 
 ## 何をするか
 
 ```bash
-python3 tools/fw_migrate/ipcom_to_nfw.py tools/fw_migrate/samples/ipcom-mock.conf --out docs/fw-migrate-samples/ipcom-hq
+python3 道具/ipcom_to_nfw.py 道具/ipcom-mock.conf --out 出力
 ```
 
 | 出力 | 中身 |
@@ -30,7 +30,7 @@ python3 tools/fw_migrate/ipcom_to_nfw.py tools/fw_migrate/samples/ipcom-mock.con
 ## 実行した結果(2026-11-23)
 
 ```
-$ python3 tools/fw_migrate/ipcom_to_nfw.py tools/fw_migrate/samples/ipcom-mock.conf --out docs/fw-migrate-samples/ipcom-hq
+$ python3 道具/ipcom_to_nfw.py 道具/ipcom-mock.conf --out 出力
 ルール 6 本 → 8 本 / {'移した': 3, '要確認': 3, '移さない': 0} / 伏せた行 3 / 移さない行 1 / 通信 21 本中 違い 1 本
 形の確認: {'CreateRuleGroup': 'ok', 'CreateFirewallPolicy': 'ok'}
 ```
