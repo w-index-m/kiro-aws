@@ -1,0 +1,842 @@
+const pptxgen = require('pptxgenjs');
+const { applyTheme } = require('/root/.claude/skills/synced/873d3bbd-f5ee-4b8c-9a98-2572553cb7c0_eea210e2-e365-400d-9ef2-489ddbf84912/pptx/scripts/apply_theme.js');
+
+const OUT = process.argv[2] || 'deck.pptx';
+const THEME = {
+  name: 'Nirvana Behind',
+  headFontFace: 'Meiryo',
+  bodyFontFace: 'Meiryo',
+  colors: {
+    dk1: '070D17', lt1: 'FFFFFF', dk2: '13213A', lt2: 'DBE6F3',
+    accent1: '4FD6E8', accent2: 'F2A93B', accent3: 'FF5A6A', accent4: 'A98BFF',
+    accent5: '5FE0A0', accent6: '8BA0B8', hlink: '4FD6E8', folHlink: 'A98BFF',
+  },
+};
+
+const pres = new pptxgen();
+pres.layout = 'LAYOUT_16x9'; // 10 x 5.625
+pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
+pres.title = 'Kiro で AWS を作る';
+pres.author = 'Claude Code';
+const C = pres.SchemeColor;
+const SH = pres.shapes;
+
+// ── layouts ──
+pres.defineSlideMaster({
+  title: 'TITLE_DARK',
+  background: { color: C.text1 },
+  objects: [
+    { placeholder: { options: { name: 'title', type: 'title', x: 0.6, y: 1.55, w: 8.8, h: 1.4, fontSize: 36, bold: true, color: C.background1, valign: 'top', align: 'left', margin: 0 }, text: '' } },
+    { placeholder: { options: { name: 'body', type: 'body', x: 0.6, y: 3.05, w: 8.8, h: 1.5, fontSize: 16, color: C.accent1, valign: 'top', align: 'left', margin: 0 }, text: '' } },
+  ],
+});
+pres.defineSlideMaster({
+  title: 'CONTENT_DARK',
+  background: { color: C.text1 },
+  margin: [0.5, 0.5, 0.5, 0.5],
+  objects: [
+    { placeholder: { options: { name: 'title', type: 'title', x: 0.5, y: 0.3, w: 9.0, h: 0.7, fontSize: 26, bold: true, color: C.background1, valign: 'middle', align: 'left', margin: 0 }, text: '' } },
+    { text: { text: 'Nirvana Lab ・ Kiro で AWS を作る', options: { x: 0.5, y: 5.2, w: 6, h: 0.3, fontSize: 9, color: C.accent6, margin: 0 } } },
+  ],
+  slideNumber: { x: 9.0, y: 5.2, w: 0.5, h: 0.3, fontSize: 9, color: C.accent6, align: 'right' },
+});
+
+// ── helpers ──
+function hex(slide, x, y, size, color, label, name, labelColor) {
+  slide.addShape(SH.HEXAGON, { x, y, w: size, h: size * 0.88, fill: { color }, line: { color, width: 0 }, objectName: name });
+  if (label) {
+    slide.addText(label, { x, y, w: size, h: size * 0.88, align: 'center', valign: 'middle', fontSize: Math.round(size * 18), bold: true, color: labelColor || C.text1, margin: 0, isTextBox: true, objectName: name + ' label' });
+  }
+}
+function card(slide, x, y, w, h, name) {
+  slide.addShape(SH.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: C.text2 }, line: { color: C.text2, width: 0 }, objectName: name });
+}
+function txt(slide, text, opt) {
+  slide.addText(text, Object.assign({ isTextBox: true, margin: 0, color: C.background2, fontSize: 14, valign: 'top' }, opt));
+}
+
+// タイトル
+pres.addSection({ title: 'はじめに' });
+let s = pres.addSlide({ masterName: 'TITLE_DARK', sectionTitle: 'はじめに' });
+s.addText('Kiro で AWS を作る', { placeholder: 'title' });
+s.addText('VPC・Direct Connect・ALB・NLB の構築、要件定義書・設計書・手順書、操作手順と変更の進め方(2026-11-22 時点)', { placeholder: 'body' });
+hex(s, 7.75, 0.45, 0.9, C.accent1, '', 'motif hex 1');
+hex(s, 8.55, 0.95, 0.65, C.accent2, '', 'motif hex 2');
+hex(s, 7.95, 1.25, 0.5, C.accent3, '', 'motif hex 3');
+s.addNotes('この資料は、AWS の AI 開発ツール Kiro で AWS の構築を進めるときの整理です。Kiro とは何か、AWS の構築で何が楽になり何が人に残るか、VPC・Direct Connect・ALB・NLB の注意点、要件定義書と設計書の作り方を順に見ます。内容は 2026 年 11 月時点の公式ドキュメントで確かめたもので、Kiro 自体は実際には動かしていません。設計書の自動作成だけは、ラボの ALB の模擬装置で実際に試しました。親の資料「AI ドリブン開発の裏側」の続きにあたります。');
+
+pres.addSection({ title: 'Kiro とは' });
+// 11c. AWS の Kiro で開発するなら
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'Kiro とは' });
+s.addText('Kiro とは: 仕様から入る AI 開発ツール', { placeholder: 'title' });
+txt(s, 'Kiro: AWS の AI 開発ツール(VS Code 系のエディタ・CLI・Web)。コードの前に「仕様」を作るのが特徴', { x: 0.5, y: 1.0, w: 9, h: 0.4, fontSize: 12, color: C.accent1 });
+const KH = { bold: true, color: C.text1, fill: { color: C.accent2 }, fontSize: 11 };
+const kn = (t) => ({ text: t, options: { bold: true, color: C.background1 } });
+s.addTable([
+  [{ text: 'Kiro の仕組み', options: KH }, { text: '何をするか', options: KH }, { text: 'この開発(Claude Code)での相当', options: KH }],
+  [kn('Specs(仕様)'), { text: '依頼から requirements.md・design.md・tasks.md を先に作り、タスク順に実装' }, { text: '要件は会話で決め、結果を docs/ に残す' }],
+  [kn('Steering'), { text: 'プロジェクトの決まりを Markdown で毎回渡す' }, { text: 'CLAUDE.md' }],
+  [kn('Hooks'), { text: '保存・作成などのたびに、裏で決まった作業を走らせる' }, { text: 'Claude Code の hooks(例: 終わる前に commit・push を促す)' }],
+  [kn('クラウドセッション / 自律エージェント'), { text: '管理されたクラウドの隔離環境で、手元を閉じても作業を続ける' }, { text: 'LLM サンドボックス(今回の作業場所)' }],
+  [kn('MCP・Powers'), { text: '外部の道具をつなぐ。Powers は SAM など AWS 向けの手引き付き' }, { text: 'MCP(GitHub など)・skills' }],
+], { x: 0.5, y: 1.45, w: 9.0, colW: [2.3, 3.6, 3.1], fontSize: 10, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.46, valign: 'middle', objectName: 'kiro table' });
+txt(s, 'AWS 構築なら: Specs に要件、design に構成図、tasks に Terraform/SAM の作業を分け、親の資料「AI ドリブンで AWS を作るなら」の流れ(plan → 人の承認 → apply)に乗せる', { x: 0.5, y: 4.3, w: 9, h: 0.45, fontSize: 11 });
+txt(s, '注意: Kiro のクラウドの隔離環境は、既定で外への通信が制限なし(今回のサンドボックスは許可制)。鍵の扱いは同じく慎重に', { x: 0.5, y: 4.75, w: 9, h: 0.4, fontSize: 10.5, color: C.accent3 });
+s.addNotes('AWS には Kiro という AI 開発ツールがあります。VS Code 系のエディタのほか、CLI や Web でも使えます。特徴は、コードを書く前に仕様を作ることで、依頼から requirements、design、tasks の 3 つの Markdown を作り、タスクの順に実装します。プロジェクトの決まりを毎回渡す Steering は、この開発の CLAUDE.md に当たります。保存などのたびに裏で作業を走らせる Hooks は、Claude Code の hooks に当たります。クラウドセッションや自律エージェントは、管理されたクラウドの隔離環境で作業を続ける仕組みで、今回の LLM サンドボックスと同じ考え方です。AWS の構築に使うなら、Specs に要件、design に構成、tasks に Terraform や SAM の作業を分け、親の資料の「AI ドリブンで AWS を作るなら」の流れに乗せます。注意点として、Kiro のクラウドの隔離環境は既定で外への通信に制限が無いので、鍵の扱いは慎重にします。この資料では Kiro を実際には動かしていません。内容は 2026 年 11 月時点の公式ドキュメントで確かめたものです。');
+
+pres.addSection({ title: 'AWS の構築' });
+// 11d. Kiro で AWS 構築は楽になる?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('Kiro で AWS の構築は楽になる?', { placeholder: 'title' });
+card(s, 0.5, 1.1, 4.35, 3.4, 'kiro easy card');
+card(s, 5.15, 1.1, 4.35, 3.4, 'kiro hard card');
+txt(s, '楽になる工程', { x: 0.75, y: 1.25, w: 3.9, h: 0.35, fontSize: 15, bold: true, color: C.accent5 });
+const kEasy = [
+  ['書く', '依頼から CDK・CloudFormation・Terraform を作る。Powers(CDK/CFn・SAM・Terraform)に手引きと道具が入っている'],
+  ['調べる', 'AWS の MCP サーバーで、ドキュメントや今のリソースを調べながら作る'],
+  ['出す', 'AWS MCP Server のデプロイ手順(SOP)で、CDK を作って CloudFormation でデプロイまで(プレビュー)'],
+];
+kEasy.forEach(([h, b], i) => {
+  const y = 1.7 + i * 0.9;
+  txt(s, h, { x: 0.75, y, w: 0.9, h: 0.3, fontSize: 13, bold: true, color: C.background1 });
+  txt(s, b, { x: 1.6, y, w: 3.1, h: 0.85, fontSize: 10.5 });
+});
+txt(s, '楽にならない・増える工程', { x: 5.4, y: 1.25, w: 3.9, h: 0.35, fontSize: 15, bold: true, color: C.accent3 });
+const kHard = [
+  ['仕様を作る', 'Specs(要件・設計・タスク)を先に作るので、最初の工程は増える。その代わり作り直しが減る'],
+  ['判断する', 'ネットワーク構成・権限・費用は人が決める'],
+  ['確かめる', 'plan の確認と出来上がりの確認は人。「作るより確かめる方が大変」は Kiro でも同じ'],
+];
+kHard.forEach(([h, b], i) => {
+  const y = 1.7 + i * 0.9;
+  txt(s, h, { x: 5.4, y, w: 1.15, h: 0.3, fontSize: 13, bold: true, color: C.background1 });
+  txt(s, b, { x: 6.55, y, w: 2.8, h: 0.85, fontSize: 10.5 });
+});
+txt(s, '速くなるのは「書く・調べる・出す」。決めることと確かめることは人に残る', { x: 0.5, y: 4.7, w: 9, h: 0.35, fontSize: 12, italic: true, color: C.accent2 });
+s.addNotes('Kiro を使うと、AWS の構築のうち、書く、調べる、出すの 3 つが楽になります。依頼から CDK や CloudFormation、Terraform のコードを作れ、AWS 向けの Powers には手引きと道具がまとめて入っています。AWS の MCP サーバーを使えば、ドキュメントや今のリソースを調べながら作れ、デプロイ手順の SOP を使うと CDK を作って CloudFormation でデプロイするところまで進められます。ただしこれはプレビュー機能です。一方で、Specs を先に作るので最初の工程はむしろ増えます。ネットワーク構成や権限、費用の判断、plan と出来上がりの確認は人に残ります。');
+
+// 11e. 条件と、AWS を変更する 2 つの方法
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('条件はシビア? AWS の変更は Kiro からできる?', { placeholder: 'title' });
+txt(s, '使い始めるのは難しくない。厳しく考えるべきなのは AWS の権限の渡し方', { x: 0.5, y: 1.0, w: 9, h: 0.35, fontSize: 12, color: C.accent1 });
+s.addTable([
+  [{ text: '項目', options: KH }, { text: '条件', options: KH }],
+  [kn('Kiro へのサインイン'), { text: 'GitHub・Google・AWS Builder ID・IAM Identity Center のどれか。会社で使うなら IAM Identity Center が前提' }],
+  [kn('プラン'), { text: '無料枠は月 50 クレジットと少ない。本格的に使うなら有料プラン(会社なら AWS 請求の Enterprise)' }],
+  [kn('AWS への変更'), { text: 'その PC に有効な AWS の認証情報と、変更に足る IAM 権限が要る' }],
+], { x: 0.5, y: 1.4, w: 9.0, colW: [2.0, 7.0], fontSize: 10.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.42, valign: 'middle', objectName: 'kiro cond table' });
+txt(s, 'AWS の変更はできる。方法は 2 つ', { x: 0.5, y: 3.25, w: 9, h: 0.35, fontSize: 13, bold: true, color: C.accent5 });
+card(s, 0.5, 3.65, 4.35, 1.05, 'kiro way1 card');
+card(s, 5.15, 3.65, 4.35, 1.05, 'kiro way2 card');
+hex(s, 0.65, 3.8, 0.4, C.accent1, '1', 'kiro way1 hex');
+hex(s, 5.3, 3.8, 0.4, C.accent1, '2', 'kiro way2 hex');
+txt(s, 'ターミナルの命令で', { x: 1.15, y: 3.75, w: 3.6, h: 0.3, fontSize: 12, bold: true, color: C.background1 });
+txt(s, 'aws・cdk deploy・terraform apply などを実行', { x: 1.15, y: 4.08, w: 3.6, h: 0.55, fontSize: 10.5 });
+txt(s, 'AWS MCP Server 経由で', { x: 5.8, y: 3.75, w: 3.6, h: 0.3, fontSize: 12, bold: true, color: C.background1 });
+txt(s, 'AWS の API を直接呼ぶ。認証は SigV4(MCP Proxy for AWS)か AWS Sign-in の OAuth', { x: 5.8, y: 4.08, w: 3.6, h: 0.55, fontSize: 10.5 });
+txt(s, 'どちらも、認証は Kiro ではなくその PC の AWS の設定(~/.aws・環境変数・IAM ロール)を使う', { x: 0.5, y: 4.8, w: 9, h: 0.35, fontSize: 11, italic: true, color: C.accent2 });
+s.addNotes('Kiro を使い始める条件は難しくありません。サインインは GitHub、Google、AWS Builder ID、IAM Identity Center のどれかで、会社で使うなら IAM Identity Center が前提です。無料枠は月 50 クレジットと少ないので、本格的に使うなら有料プランになります。厳しく考えるべきなのは AWS の権限の渡し方です。AWS の変更は Kiro からできます。方法は 2 つで、ターミナルで aws や cdk deploy、terraform apply を実行する方法と、AWS MCP Server 経由で AWS の API を直接呼ぶ方法です。どちらの場合も、認証は Kiro 自体ではなく、その PC の AWS の設定を使います。');
+
+// 11f. 必要なものと安全のためのおすすめ
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('Kiro で AWS を変更するのに必要なもの', { placeholder: 'title' });
+card(s, 0.5, 1.1, 4.35, 3.75, 'kiro need card');
+card(s, 5.15, 1.1, 4.35, 3.75, 'kiro safe card');
+txt(s, '必要なもの', { x: 0.75, y: 1.25, w: 3.9, h: 0.35, fontSize: 15, bold: true, color: C.accent1 });
+const kNeed = [
+  ['Kiro', 'エディタか CLI と、サインイン用のアカウント'],
+  ['AWS CLI と認証情報', 'SSO(IAM Identity Center)の一時的なものがよい'],
+  ['構築の道具', 'CDK 2.x か Terraform。SAM を使うならその CLI'],
+  ['MCP の設定', '~/.kiro/settings/mcp.json か Powers で入れる'],
+  ['IAM 権限', '作るリソースに必要な分だけ'],
+];
+kNeed.forEach(([h, b], i) => {
+  const y = 1.7 + i * 0.62;
+  hex(s, 0.75, y, 0.36, C.accent1, String(i + 1), 'need hex ' + (i + 1));
+  txt(s, h, { x: 1.2, y: y - 0.04, w: 3.5, h: 0.28, fontSize: 11.5, bold: true, color: C.background1 });
+  txt(s, b, { x: 1.2, y: y + 0.24, w: 3.5, h: 0.3, fontSize: 10 });
+});
+txt(s, '安全のためのおすすめ', { x: 5.4, y: 1.25, w: 3.9, h: 0.35, fontSize: 15, bold: true, color: C.accent3 });
+const kSafe = [
+  '最初は検証用の AWS アカウントで試す',
+  'Kiro に渡す権限は読み取り用。本番への apply は人が承認してから(または CI から)',
+  'AWS Budgets で費用の上限アラートを設定しておく',
+  'Kiro のクラウドの隔離環境は既定で外への通信に制限がない。そこに強い鍵を置かない',
+];
+txt(s, kSafe.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < kSafe.length - 1 } })), { x: 5.4, y: 1.7, w: 3.95, h: 3.0, fontSize: 11.5, paraSpaceAfter: 8 });
+s.addNotes('Kiro から AWS を変更するのに必要なものは 5 つです。Kiro 本体とサインイン用のアカウント、AWS CLI とその PC で有効な認証情報、CDK や Terraform などの構築の道具、AWS MCP Server などの設定、そして作るリソースに必要な分だけの IAM 権限です。認証情報は、IAM Identity Center の一時的なものがおすすめです。安全のためには、最初は検証用のアカウントで試すこと、Kiro に渡す権限は読み取り用にして本番への apply は人が承認してから行うこと、AWS Budgets で費用の上限アラートを設定しておくこと、Kiro のクラウドの隔離環境には強い鍵を置かないことの 4 つをおすすめします。');
+
+// 11f2. VPC・Direct Connect・ALB・NLB を Kiro で作るなら
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('VPC・DX・ALB・NLB を Kiro で作るなら', { placeholder: 'title' });
+const PH = { bold: true, color: C.text1, fill: { color: C.accent2 }, fontSize: 10 };
+const pc = (t, color) => ({ text: t, options: color ? { color } : {} });
+s.addTable([
+  [{ text: '部品', options: PH }, { text: 'Kiro に任せられること', options: PH }, { text: '人がやること・決めること', options: PH }, { text: '特に注意すること', options: PH }],
+  [kn('VPC'), pc('CIDR・サブネット(複数 AZ)・ルートテーブル・NAT・VPC エンドポイント・フローログのコード化'), pc('CIDR の設計(オンプレや他 VPC と重ならないか)、AZ の数、NAT の数(費用)'), pc('CIDR・サブネットは後から変えると作り直し。最初の設計が一番大事', THEME.colors.accent2)],
+  [kn('Direct Connect'), pc('DX ゲートウェイ、VGW / TGW との関連付け、VIF(専用接続)、ルート伝搬のコード化'), pc('回線の申し込み・LOA・構内の配線・事業者とのやり取り。BGP の ASN・VLAN・認証キー。オンプレ側ルーターの BGP 設定'), pc('物理と契約はコードにできない。経路を間違えると本番通信が止まる', THEME.colors.accent3)],
+  [kn('ALB'), pc('リスナー・ルール・ターゲットグループ・ヘルスチェック・SG・WAF の関連付け'), pc('証明書(ACM の DNS 検証)、公開範囲、ルールの優先順位の設計'), pc('DNS 検証は DNS 側の作業が要る。ルールの順番違いで別のサーバーへ', THEME.colors.accent2)],
+  [kn('NLB'), pc('リスナー・ターゲットグループ・AZ ごとの固定 IP(EIP)・クロスゾーン・TLS のコード化'), pc('固定 IP の要否、送信元 IP を残すか(ターゲットの種類で変わる)、ヘルスチェックの方式'), pc('サブネットや EIP の変更は作り直しになりやすい。送信元 IP の扱いでサーバー側の SG が変わる', THEME.colors.accent2)],
+], { x: 0.4, y: 1.0, w: 9.2, colW: [1.35, 2.75, 2.75, 2.35], fontSize: 8.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: [0.32, 0.72, 0.72, 0.72, 0.72], valign: 'middle', objectName: 'aws parts table' });
+txt(s, 'Kiro が書くのはコード。物理・契約・設計の判断・本番への反映の承認は人', { x: 0.4, y: 4.88, w: 9.2, h: 0.3, fontSize: 12, italic: true, color: C.accent2 });
+s.addNotes('VPC、Direct Connect、ALB、NLB の 4 つを部品ごとに整理しました。VPC は CIDR やサブネット、ルートテーブルなどをコードにするところは Kiro に任せられますが、CIDR の設計は人が決めます。後から変えると作り直しになるので、最初の設計が一番大事です。Direct Connect は性質が違い、回線の申し込みや配線、事業者とのやり取り、オンプレ側ルーターの BGP 設定はコードにできません。経路を間違えると本番通信が止まります。ALB は証明書の DNS 検証とルールの順番、NLB は固定 IP と送信元 IP の扱いが注意点です。');
+
+// 11f3. 4 つを進めるときの決まりごと・ラボで先に試せること
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('この 4 つを Kiro で進めるときの決まりごと', { placeholder: 'title' });
+card(s, 0.5, 1.1, 5.1, 3.85, 'aws rules card');
+card(s, 5.8, 1.1, 3.7, 3.85, 'aws lab card');
+const awsRules = [
+  ['作り直し(replace)が出たら止める', 'plan に forces replacement が出たら人が判断するまで進めない。Steering に書くか Hooks で検出(VPC・サブネット・NLB で起きやすい)'],
+  ['Direct Connect の経路は二重に確かめる', '広告する経路・受け取る経路・優先度を design に表で書かせ、オンプレ側の設定と突き合わせる'],
+  ['本番への反映は作業時間を決めて CI/CD から', 'VPC のルートや DX の変更は全体に影響する。Kiro から直接 apply しない'],
+  ['値は表で管理する', 'CIDR・ASN・VLAN・EIP はパラメータシートを正とし、コードはそこから。反映後は describe で確かめる'],
+];
+awsRules.forEach(([h, b], i) => {
+  const y = 1.22 + i * 0.92;
+  hex(s, 0.65, y + 0.02, 0.4, C.accent3, String(i + 1), 'aws rule hex ' + (i + 1));
+  txt(s, h, { x: 1.15, y: y - 0.02, w: 4.35, h: 0.3, fontSize: 11.5, bold: true, color: C.background1 });
+  txt(s, b, { x: 1.15, y: y + 0.28, w: 4.35, h: 0.6, fontSize: 9.5 });
+});
+txt(s, 'このラボで先に試せること', { x: 6.0, y: 1.22, w: 3.35, h: 0.32, fontSize: 12.5, bold: true, color: C.accent5 });
+const awsLab = [
+  ['ALB', '模擬装置で振り分け・ヘルスチェック・設計書の自動作成まで'],
+  ['NLB', '専用の模擬は無い。L4 の振り分けは BIG-IP の模擬装置で似た動き'],
+  ['DX の BGP', 'Cisco・Catalyst は本物の BGP(TCP 179)。オンプレ側の広告・フィルター・AS パスを事前に'],
+  ['VPC', '模擬は無い。CIDR の重なりや経路表のチェックは小さな道具で'],
+];
+awsLab.forEach(([h, b], i) => {
+  const y = 1.62 + i * 0.82;
+  txt(s, h, { x: 6.0, y, w: 3.35, h: 0.28, fontSize: 11, bold: true, color: C.background1 });
+  txt(s, b, { x: 6.0, y: y + 0.27, w: 3.35, h: 0.52, fontSize: 9.5 });
+});
+s.addNotes('この 4 つを Kiro で進めるときは、4 つの決まりごとを置きます。plan に作り直しが出たら人が判断するまで止める。Direct Connect の経路は、広告する経路と受け取る経路、優先度を表に書かせ、オンプレ側と突き合わせる。本番への反映は作業時間を決めて CI/CD から行い、Kiro から直接 apply しない。CIDR や ASN、VLAN、EIP などの値はパラメータシートを正として、反映後は describe で確かめる。このラボでは、ALB は模擬装置で設計書の自動作成まで、Direct Connect のオンプレ側の BGP は本物の BGP を話す Cisco や Catalyst で事前に試せます。');
+
+// DX → DXGW → VPC は 1 回の作業でできる?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('DX → DXGW → VPC は 1 回の作業でつながる?', { placeholder: 'title' });
+txt(s, 'AWS 側の設定は 1 回の apply にまとめられる。ただし全体は 3 段で、回線が来ていなければ 1 日では終わらない', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+const dxStages = [
+  ['1. 物理の回線', C.accent3, '人・事業者', ['回線の申し込み(専用接続)か、パートナーの接続(ホスト型)', 'LOA-CFA をもらい、構内の配線(クロスコネクト)を頼む', 'コードにできない'], '数日〜数週間(事業者と構内の工事しだい)'],
+  ['2. AWS 側の論理', C.accent1, 'Kiro が IaC に', ['DXGW・VIF(private / transit)', 'VGW を VPC に付ける(または TGW)', 'DXGW との関連付け・ルートの伝搬'], '1 回の apply。数分〜数十分'],
+  ['3. オンプレの BGP', C.accent2, '人', ['ルーターに VLAN・IP・ASN・認証キー', '対向とAWSの前後は自由。VIF から設定例を取れるので AWS → 対向が楽', 'BGP が張れて VIF が available に'], '作業時間内(当日)'],
+];
+dxStages.forEach(([h, col, who, items, time], i) => {
+  const x = 0.5 + i * 3.05;
+  card(s, x, 1.42, 2.9, 2.85, 'dx stage card ' + (i + 1));
+  txt(s, h, { x: x + 0.15, y: 1.5, w: 2.6, h: 0.32, fontSize: 13, bold: true, color: col });
+  txt(s, who, { x: x + 0.15, y: 1.82, w: 2.6, h: 0.25, fontSize: 9.5, color: C.accent6 });
+  txt(s, items.map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < items.length - 1 } })), { x: x + 0.15, y: 2.12, w: 2.65, h: 1.45, fontSize: 9.5, paraSpaceAfter: 4 });
+  txt(s, time, { x: x + 0.15, y: 3.65, w: 2.65, h: 0.5, fontSize: 10, bold: true, color: col });
+});
+card(s, 0.5, 4.38, 9.0, 0.62, 'dx oneday card');
+txt(s, [
+  { text: '順番: ', options: { bold: true, color: C.accent5 } },
+  { text: '回線を待たなくてよい: DXGW・VGW・関連付けは 1 段目と並行して先に作れる。VIF は回線(接続)の上に作り、物理と BGP がつながって使える。回線が来ていれば、残りは同じ日に。ホスト型の VIF はパートナーが作り、こちらは受け入れる' },
+], { x: 0.7, y: 4.43, w: 8.6, h: 0.55, fontSize: 9.5, valign: 'middle' });
+txt(s, '日数は目安。物理の回線はリードタイムを先に確かめて、計画に入れる', { x: 0.5, y: 5.02, w: 9, h: 0.22, fontSize: 9.5, italic: true, color: C.accent2 });
+s.addNotes('Direct Connect から Direct Connect ゲートウェイを通って VPC までつなぐのは、まとめて 1 回でできるか、という質問です。AWS 側の設定は 1 回の Terraform の apply にまとめられますが、全体は 3 段に分かれます。1 段目は物理の回線で、回線の申し込み、LOA-CFA を受け取って構内の配線を頼むところです。コードにできず、事業者と構内の工事しだいで数日から数週間かかります。2 段目は AWS 側の論理の設定で、Direct Connect ゲートウェイ、仮想インタフェース、VPC に付ける仮想プライベートゲートウェイ、関連付け、ルートの伝搬です。ここは Kiro に IaC を書かせて 1 回の apply で入れられ、数分から数十分です。3 段目はオンプレ側のルーターの BGP の設定で、BGP が張れると仮想インタフェースが使える状態になります。対向のルーターと AWS のどちらを先に設定してもかまいません。仮想インタフェースを作るとルーターの設定例をダウンロードできるので、AWS を先にして対向を後にすると楽です。物理の回線をつないでから Direct Connect ゲートウェイを作る必要はありません。Direct Connect ゲートウェイ、仮想プライベートゲートウェイ、その関連付けは、回線の手配と並行して先に作っておけます。仮想インタフェースは回線、つまり接続の上に作るもので、物理の回線と BGP がつながってはじめて使える状態になります。回線がもう来ていれば、残りは同じ日にできます。ホスト型の接続では、仮想インタフェースはパートナーが作り、こちらは受け入れるだけです。日数は目安なので、物理の回線のリードタイムは先に確かめて計画に入れてください。');
+
+// DXGW に VPC をつなぐには
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('DXGW に VPC はつなげる?', { placeholder: 'title' });
+txt(s, 'つなげる。ただし VPC を直接ではなく、VPC 側の「窓口」を DXGW に関連付ける。窓口は 3 種類', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: '窓口', options: KH }, { text: 'DX 側の VIF', options: KH }, { text: '向いている場面', options: KH }, { text: '数の上限(既定)', options: KH }],
+  [kn('VGW(仮想プライベートゲートウェイ)'), { text: 'private VIF' }, { text: 'VPC が少ない。VPC ごとに VGW を付ける。別リージョン・別アカウントの VPC も可' }, { text: '1 つの DXGW に VGW 20 個(引き上げ不可)' }],
+  [kn('TGW(Transit Gateway)'), { text: 'transit VIF' }, { text: 'VPC が多い・VPC 同士も通したい。TGW に VPC をまとめる' }, { text: '1 つの DXGW に TGW 6 個' }],
+  [kn('Cloud WAN のコアネットワーク'), { text: '—' }, { text: '複数リージョンを Cloud WAN でまとめている' }, { text: '使う前に確かめる' }],
+], { x: 0.5, y: 1.4, w: 9.0, colW: [2.4, 1.3, 3.3, 2.0], fontSize: 9.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: [0.32, 0.66, 0.6, 0.5], valign: 'middle', objectName: 'dxgw attach table' });
+card(s, 0.5, 3.65, 9.0, 1.3, 'dxgw note card');
+const dxgwNotes = [
+  'DXGW を通って VPC 同士は通信しない(VGW の関連付けの場合)。VPC 同士は TGW やピアリングで',
+  '1 つの VGW・1 つの private VIF は、1 つの DXGW にしか付けられない',
+  'TGW の関連付けでは、オンプレへ広告するプレフィックス(allowed prefixes)を指定する。TGW と DXGW の ASN は別にする',
+];
+txt(s, dxgwNotes.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < dxgwNotes.length - 1 } })), { x: 0.7, y: 3.75, w: 8.6, h: 1.15, fontSize: 10, paraSpaceAfter: 4 });
+txt(s, 'どれも AWS 側の論理の設定なので、Kiro に IaC を書かせられる(前のページの 2 段目)', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 10, italic: true, color: C.accent2 });
+s.addNotes('Direct Connect ゲートウェイに VPC をつなげるか、という質問です。つなげますが、VPC を直接つなぐのではなく、VPC 側の窓口を Direct Connect ゲートウェイに関連付けます。窓口は 3 種類です。1 つ目は仮想プライベートゲートウェイで、private の仮想インタフェースと組み合わせます。VPC ごとに付け、別のリージョンや別のアカウントの VPC もつなげます。1 つの Direct Connect ゲートウェイに 20 個までで、この上限は引き上げられません。2 つ目は Transit Gateway で、transit の仮想インタフェースと組み合わせます。VPC が多いときや VPC 同士も通したいときに向いていて、1 つの Direct Connect ゲートウェイに 6 個までです。3 つ目は Cloud WAN のコアネットワークです。気をつけることとして、仮想プライベートゲートウェイで関連付けた場合、Direct Connect ゲートウェイを通って VPC 同士は通信しません。1 つの仮想プライベートゲートウェイと 1 つの private の仮想インタフェースは、1 つの Direct Connect ゲートウェイにしか付けられません。Transit Gateway の場合は、オンプレへ広告するプレフィックスを指定し、ASN を分けます。どれも AWS 側の論理の設定なので、Kiro に IaC を書かせられます。');
+
+// 対向がキャリアのサービスなら
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('対向がキャリアのサービスなら、拠点は要る?', { placeholder: 'title' });
+txt(s, 'DX のロケーションに自分の機器や拠点は要らない。キャリアの網に拠点がつながっていればよい(閉域網の AWS 接続オプションなど)', { x: 0.5, y: 0.98, w: 9, h: 0.5, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: '', options: KH }, { text: '自前で専用接続', options: KH }, { text: 'キャリアのサービス(L3 型)', options: KH }, { text: 'キャリアのサービス(L2 型)', options: KH }],
+  [kn('DX ロケーションの機器'), { text: '自分のルーター・ラック・構内配線' }, { text: '要らない(キャリアの機器)' }, { text: '要らない(キャリアの機器)' }],
+  [kn('AWS との BGP'), { text: '自分のルーター' }, { text: 'キャリアが張る。こちらはキャリアと経路の取り決め' }, { text: '自分の拠点のルーターから張る' }],
+  [kn('AWS 側で受けるもの'), { text: '接続 + 自分で作る VIF' }, { text: 'ホスト型の VIF か接続を受け入れ → DXGW に付ける', options: { colspan: 2 } }],
+  [kn('こちらの作業'), { text: '1〜3 段すべて' }, { text: '契約・受け入れ・DXGW と VPC 側', options: {} }, { text: '契約・受け入れ・DXGW と VPC 側・拠点の BGP' }],
+], { x: 0.5, y: 1.6, w: 9.0, colW: [1.9, 2.1, 2.5, 2.5], fontSize: 9.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: [0.32, 0.5, 0.58, 0.5, 0.5], valign: 'middle', objectName: 'carrier table' });
+card(s, 0.5, 4.15, 9.0, 0.82, 'carrier note card');
+txt(s, [
+  { text: '確かめること: ', options: { bold: true, color: C.accent5 } },
+  { text: 'どこまでキャリアが持つか(BGP・冗長・帯域)、ASN と広告する経路、2 本目の冗長。例: NTT Com の FIC は「Port から AWS」と「FIC-Router から AWS」の 2 通り(private / public / transit VIF)。富士通は「クラウドコネクト for AWS Direct Connect」。中身は契約前に各社の資料で' },
+], { x: 0.7, y: 4.2, w: 8.6, h: 0.72, fontSize: 9.5, valign: 'middle' });
+txt(s, 'Kiro(IaC)に任せられるのは、受け入れ・DXGW・VPC 側。キャリアとの契約と経路の取り決めは人', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 10, italic: true, color: C.accent2 });
+s.addNotes('対向がキャリアのサービスの場合、拠点が要るかという質問です。Direct Connect のロケーションに自分の機器や拠点を置く必要はありません。キャリアの閉域網の AWS 接続オプションのようなサービスなら、キャリアの機器がロケーションにあり、こちらの拠点がキャリアの網につながっていれば足ります。サービスには大きく 2 つの型があります。L3 型では、AWS との BGP はキャリアが張り、こちらはキャリアと経路の取り決めをします。L2 型では、自分の拠点のルーターから AWS と BGP を張ります。どちらも AWS 側では、キャリアが作ったホスト型の仮想インタフェースか接続を受け入れて、Direct Connect ゲートウェイに付けます。確かめることは、どこまでキャリアが持つか、ASN と広告する経路、そして 2 本目の冗長を別のロケーションや別のキャリアにするかです。たとえば NTT コミュニケーションズの Flexible InterConnect には、ポートから AWS へつなぐ形と、FIC-Router から AWS へつなぐ形があり、private、public、transit のどの仮想インタフェースにも対応しています。富士通には、クラウドコネクト for AWS Direct Connect というサービスがあります。サービスの中身はキャリアごとに違うので、契約前に資料で確かめてください。Kiro に任せられるのは、受け入れと Direct Connect ゲートウェイ、VPC 側の設定で、キャリアとの契約と経路の取り決めは人が行います。');
+
+// VPC 内の ALB・NLB と ACM も含めると
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'AWS の構築' });
+s.addText('VPC 内の ALB・NLB と ACM も含めると', { placeholder: 'title' });
+txt(s, 'その認識で合っている。HTTPS の ALB には ACM の証明書(同じリージョン)。待ちは DNS 検証', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+const albSteps = [
+  ['VPC の土台', 'public サブネット(2 AZ 以上、IGW へのルート)・private サブネット・SG', 'Kiro(IaC)'],
+  ['ACM の証明書', 'ドメイン名(SAN も)を申請 → DNS 検証の CNAME → 発行(Issued)を待つ', 'DNS が Route 53 なら同じ apply で。外の DNS なら人が CNAME を登録'],
+  ['ALB(internet-facing)', 'public サブネットに置く。443 のリスナーに証明書、80 は 443 へ転送。ターゲットグループ・ヘルスチェック', 'Kiro(IaC)。公開してよいかは人'],
+  ['NLB(VPC の中)', 'TCP のまま通すなら証明書は不要。TLS で受けるなら ACM が要る。DX からはオンプレ → NLB の経路と SG', 'Kiro(IaC)。送信元 IP の扱いは人が決める'],
+  ['名前を向ける', 'Route 53 の ALIAS(外の DNS なら CNAME)を ALB へ。https で開いて証明書を確かめる', '外の DNS は人。確認は人'],
+];
+albSteps.forEach(([h, b, who], i) => {
+  const y = 1.35 + i * 0.67;
+  hex(s, 0.5, y + 0.03, 0.4, i === 1 ? C.accent2 : C.accent1, String(i + 1), 'alb step hex ' + (i + 1));
+  txt(s, h, { x: 1.0, y, w: 2.2, h: 0.3, fontSize: 11.5, bold: true, color: C.background1 });
+  txt(s, b, { x: 1.0, y: y + 0.27, w: 5.1, h: 0.38, fontSize: 8.5 });
+  txt(s, who, { x: 6.2, y: y + 0.04, w: 3.3, h: 0.58, fontSize: 9.5, color: C.accent2 });
+});
+card(s, 0.5, 4.72, 9.0, 0.45, 'alb oneday card');
+txt(s, [
+  { text: '1 日で終わる?: ', options: { bold: true, color: C.accent5 } },
+  { text: 'DNS が Route 53 なら、DX の 2・3 段目と同じ日に収まりやすい。外の DNS を別の部署が持っていると、CNAME の登録待ちで日をまたぐ' },
+], { x: 0.7, y: 4.75, w: 8.6, h: 0.4, fontSize: 9.5, valign: 'middle' });
+s.addNotes('VPC の中に ALB と NLB も作り、ALB はインターネットから受けて ACM の証明書も使う場合です。インターネット向けの ALB で HTTPS を受けるなら、ACM の証明書が要ります。証明書は ALB と同じリージョンに作ります。順番は 5 つです。1 つ目は VPC の土台で、ALB を置く public のサブネットを 2 つ以上の AZ に作り、インターネットゲートウェイへのルートを付けます。2 つ目は ACM の証明書で、ドメイン名を申請し、DNS 検証の CNAME を置いて、発行されるのを待ちます。DNS が Route 53 なら同じ apply の中で CNAME を作って待てますが、外の DNS なら人が CNAME を登録します。ここがいちばん待ちになりやすいところです。3 つ目はインターネット向けの ALB で、443 のリスナーに証明書を付け、80 は 443 へ転送します。4 つ目は VPC の中の NLB で、TCP のまま通すなら証明書は要りませんが、TLS で受けるなら ACM が要ります。Direct Connect からはオンプレから NLB への経路と SG を確かめます。5 つ目は、Route 53 の ALIAS などで名前を ALB に向け、https で開いて証明書を確かめます。DNS が Route 53 なら、Direct Connect の 2 段目と 3 段目と同じ日に収まりやすいです。外の DNS を別の部署が持っていると、CNAME の登録待ちで日をまたぎます。');
+
+pres.addSection({ title: '要件定義書と設計書' });
+// 11f4. 要件定義書も Kiro で作れる?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '要件定義書と設計書' });
+s.addText('要件定義書も Kiro で作れる?', { placeholder: 'title' });
+txt(s, '下書きなら作れる。Kiro の requirements.md は「機能 1 つ分の要件」。日本の要件定義書はもっと広いので、足りない章を補う', { x: 0.5, y: 0.98, w: 9, h: 0.45, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: '要件定義書の章', options: KH }, { text: 'Kiro の requirements.md で', options: KH }, { text: '補い方', options: KH }],
+  [kn('機能要件'), { text: '得意(ユーザーストーリー + EARS の受け入れ条件)' }, { text: 'そのまま使える。粒度を人が揃える' }],
+  [kn('業務要件・背景・範囲'), { text: '依頼に書いた分だけ' }, { text: 'Steering の章立てで項目を立て、人が埋める' }],
+  [kn('非機能要件'), { text: '頼まないと薄い' }, { text: 'IPA の非機能要求グレードを Steering に入れ、項目ごとに質問させる' }],
+  [kn('移行・運用・制約・前提'), { text: 'ほぼ出ない' }, { text: 'ひな形の章として持たせる' }],
+], { x: 0.5, y: 1.48, w: 9.0, colW: [2.3, 3.2, 3.5], fontSize: 10, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.42, valign: 'middle', objectName: 'req table' });
+card(s, 0.5, 3.92, 9.0, 0.98, 'req nw card');
+txt(s, 'VPC・DX・ALB・NLB の要件で聞き漏らしやすいもの', { x: 0.7, y: 3.98, w: 8.6, h: 0.3, fontSize: 12, bold: true, color: C.accent5 });
+txt(s, '接続する拠点と帯域・冗長(DX は 2 回線か、VPN を予備にするか)・止まってよい時間(SLA)・既存の IP 帯との重なり・公開範囲と証明書・ログの保管期間・費用の上限', { x: 0.7, y: 4.28, w: 8.6, h: 0.6, fontSize: 10.5 });
+txt(s, 'AI は聞き漏らしを減らす役。決めるのは、業務と予算を知っている人', { x: 0.5, y: 4.95, w: 9, h: 0.28, fontSize: 11.5, italic: true, color: C.accent2 });
+s.addNotes('要件定義書も、下書きなら Kiro で作れます。ただし Kiro の requirements.md は、機能 1 つ分のユーザーストーリーと受け入れ条件で、日本の要件定義書よりずっと狭いものです。機能要件は得意ですが、業務要件や背景、非機能要件、移行や運用、制約や前提はほとんど出ません。会社の章立てを Steering に入れ、非機能要件は IPA の非機能要求グレードを項目表として持たせて、項目ごとに質問させると漏れが減ります。今回の VPC、Direct Connect、ALB、NLB では、拠点と帯域、冗長、止まってよい時間、既存の IP 帯との重なり、公開範囲と証明書、ログの保管期間、費用の上限が聞き漏らしやすい項目です。AI は聞き漏らしを減らす役で、決めるのは業務と予算を知っている人です。');
+
+// 11g. 設計書も Kiro で作れる?(Specs と日本の設計書)
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '要件定義書と設計書' });
+s.addText('基本設計書・詳細設計書も Kiro で作れる?', { placeholder: 'title' });
+txt(s, '作れる。ただし出るのは「開発用の設計メモ」で、日本の SIer の設計書の形そのものではない。下書きを作らせ、形と中身は人が整える', { x: 0.5, y: 0.98, w: 9, h: 0.45, fontSize: 11.5, color: C.accent1 });
+const specs = [
+  ['requirements.md', 'ユーザーストーリーと受け入れ条件(EARS という決まった書き方)'],
+  ['design.md', '構成・部品・データの形・エラー処理・テストの方針'],
+  ['tasks.md', '実装の手順を、チェックボックス付きの作業に分けたもの'],
+];
+txt(s, 'Kiro が標準で作るもの(Specs)', { x: 0.5, y: 1.45, w: 9, h: 0.3, fontSize: 12.5, bold: true, color: C.background1 });
+specs.forEach(([h, b], i) => {
+  const x = 0.5 + i * 3.05;
+  card(s, x, 1.8, 2.9, 0.95, 'spec card ' + (i + 1));
+  txt(s, h, { x: x + 0.15, y: 1.86, w: 2.6, h: 0.3, fontSize: 12, bold: true, color: C.accent2 });
+  txt(s, b, { x: x + 0.15, y: 2.16, w: 2.6, h: 0.55, fontSize: 9.5 });
+});
+s.addTable([
+  [{ text: '日本の設計書', options: KH }, { text: 'Kiro で近いもの', options: KH }, { text: '足りない部分', options: KH }],
+  [kn('要件定義書'), { text: 'requirements.md' }, { text: '非機能要件(性能・可用性・運用)は頼まないと薄くなる' }],
+  [kn('基本設計書'), { text: 'design.md の構成・方針' }, { text: '表紙・改訂履歴・会社の章立て' }],
+  [kn('詳細設計書・パラメータシート'), { text: 'design.md の一部' }, { text: '1 項目ずつの値の表(サブネット・SG のルール・ALB の設定値など)' }],
+], { x: 0.5, y: 2.9, w: 9.0, colW: [2.4, 2.4, 4.2], fontSize: 10.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.42, valign: 'middle', objectName: 'kiro doc table' });
+s.addNotes('基本設計書や詳細設計書も Kiro で作れます。ただし Kiro が出すのは開発用の設計メモで、日本の SIer でよく使う設計書の形そのものではありません。Kiro が標準で作るのは 3 つの Markdown です。requirements.md はユーザーストーリーと受け入れ条件を EARS という決まった書き方で書いたもの、design.md は構成や部品、データの形、エラー処理、テストの方針、tasks.md は実装の手順をチェックボックス付きの作業に分けたものです。日本の設計書と比べると、requirements.md は要件定義書、design.md の構成と方針は基本設計書に近く、詳細設計書やパラメータシートは design.md の一部に当たります。足りないのは、非機能要件、表紙や改訂履歴や会社の章立て、そして 1 項目ずつの値の表です。');
+
+// 11h. 設計書を会社の形に寄せる
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '要件定義書と設計書' });
+s.addText('設計書を会社の形に寄せるには', { placeholder: 'title' });
+const docHow = [
+  ['Steering にひな形を入れる', '会社の設計書の章立てと書き方を Steering(Markdown)に書いておくと、毎回その形で下書きを作れる'],
+  ['値は「現物」から起こす', '値は AI に考えさせず、IaC のコードと describe 系の結果(aws elbv2 describe-load-balancers など)から機械的に作る。設計書と実物の食い違いを防ぐ'],
+  ['Excel・Word で納める', 'Kiro が書くのは Markdown。pandoc などで Word に、Python などの小さな変換スクリプトで Excel のパラメータシートにする'],
+];
+docHow.forEach(([h, b], i) => {
+  const y = 1.1 + i * 1.02;
+  hex(s, 0.55, y + 0.05, 0.5, C.accent5, String(i + 1), 'dochow hex ' + (i + 1));
+  txt(s, h, { x: 1.2, y, w: 4.6, h: 0.32, fontSize: 13, bold: true, color: C.background1 });
+  txt(s, b, { x: 1.2, y: y + 0.33, w: 4.7, h: 0.66, fontSize: 10 });
+});
+card(s, 6.05, 1.1, 3.45, 2.9, 'doc warn card');
+txt(s, '気をつける点', { x: 6.25, y: 1.22, w: 3.1, h: 0.32, fontSize: 13, bold: true, color: C.accent3 });
+const docWarn = [
+  { h: '人の確認が要る', b: '設計書は合意と承認のための書類。AI の下書きには、存在しない設定項目や古い仕様など、もっともらしい間違いが混ざる。レビューは省けない' },
+  { h: '秘密は書かせない', b: 'アカウント ID・IP 設計・鍵などの機密を、そのまま外部の AI に渡してよいかは会社のルールを確認' },
+];
+docWarn.forEach((w, i) => {
+  const y = 1.62 + i * 1.18;
+  txt(s, w.h, { x: 6.25, y, w: 3.1, h: 0.3, fontSize: 11.5, bold: true, color: C.background1 });
+  txt(s, w.b, { x: 6.25, y: y + 0.3, w: 3.1, h: 0.85, fontSize: 9.5 });
+});
+txt(s, 'このラボでも実際に試した(次のスライド): ALB の模擬装置の describe の出力から、基本設計書とパラメータシートを起こす', { x: 0.5, y: 4.2, w: 9, h: 0.4, fontSize: 11 });
+txt(s, 'AI は下書きと転記を速くする。中身の正しさを決めるのは人と「現物」', { x: 0.5, y: 4.7, w: 9, h: 0.35, fontSize: 12, italic: true, color: C.accent2 });
+s.addNotes('Kiro の設計メモを会社の設計書の形に寄せる方法は 3 つです。まず、会社の設計書の章立てと書き方を Steering に書いておくと、毎回その形で下書きを作れます。次に、パラメータシートの値は AI に考えさせず、IaC のコードや aws elbv2 describe-load-balancers のような describe 系の命令の結果から機械的に起こします。これで設計書と実物の食い違いを防げます。最後に、Kiro が書くのは Markdown なので、Word は pandoc などで、Excel のパラメータシートは小さな変換スクリプトで作ります。気をつける点は 2 つです。設計書は合意と承認のための書類なので、AI の下書きに混ざるもっともらしい間違いを人がレビューする必要があります。また、アカウント ID や IP 設計、鍵などの機密を外部の AI に渡してよいかは、会社のルールで確かめてください。');
+
+// 11i. このラボで試した: 現物から設計書を起こす
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '要件定義書と設計書' });
+s.addText('ラボで試した: 現物から設計書を起こす', { placeholder: 'title' });
+s.addImage({ path: 'docs/images/design-docs-parameter-sheet.png', x: 0.5, y: 1.05, w: 5.6, h: 2.45, altText: 'describe の出力から自動で作ったパラメータシート(Excel)。ターゲットグループ・ターゲット・ルールの表', objectName: 'param sheet image' });
+txt(s, 'できたパラメータシート(Excel)。値はすべて describe の出力から', { x: 0.5, y: 3.55, w: 5.6, h: 0.3, fontSize: 9.5, color: C.accent6 });
+const tried = [
+  ['組む', 'aws-cli の構文で ALB を作る(web-tg・api-tg、/api/* のルール)'],
+  ['確かめる', '本物の HTTP で /index.html は web1・web2 に交互、/api/* は api1'],
+  ['起こす', 'describe を読み、基本設計書(Markdown)とパラメータシート(Excel)を自動で作る'],
+];
+tried.forEach(([h, b], i) => {
+  const y = 1.1 + i * 0.85;
+  hex(s, 6.35, y, 0.45, C.accent1, String(i + 1), 'tried hex ' + (i + 1));
+  txt(s, h, { x: 6.9, y: y - 0.03, w: 2.6, h: 0.3, fontSize: 12.5, bold: true, color: C.background1 });
+  txt(s, b, { x: 6.9, y: y + 0.27, w: 2.6, h: 0.55, fontSize: 9.5 });
+});
+card(s, 0.5, 3.95, 9.0, 0.95, 'tried note card');
+txt(s, [
+  { text: '基本設計書: ', options: { bold: true, color: C.accent5 } },
+  { text: '構成図・負荷分散・ルール・ヘルスチェックの方針は値から組み立て、目的と範囲・非機能要件・確認事項は「人が書く」欄に。', options: { breakLine: true } },
+  { text: '道具: ', options: { bold: true, color: C.accent5 } },
+  { text: 'tools/design_docs/alb_design_docs.py。呼ぶのは describe だけ(読み取り)。--lab はラボ、--aws は本物の AWS(こちらは未確認)' },
+], { x: 0.7, y: 4.03, w: 8.6, h: 0.82, fontSize: 10.5 });
+s.addNotes('前のスライドの「値は現物から起こす」を、このラボで実際にやりました。aws-cli の構文で ALB を組み、Web 用と API 用の 2 つのターゲットグループと、/api/ を API 側へ送るルールを作りました。本物の HTTP で、/index.html は web1 と web2 に交互に、/api/ は api1 に振り分けられることを確かめてから、describe の出力を読んで基本設計書とパラメータシートを自動で作りました。値はすべて describe から転記するので、設計書と実物が食い違いません。基本設計書のうち、構成図や方針は値から組み立て、目的や非機能要件は人が書く欄として残しています。同じ道具は本物の AWS にも向けられるように作りましたが、そちらはまだ試していません。');
+
+// サンプル: AWS ネットワーク設計書
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '要件定義書と設計書' });
+s.addText('サンプル: AWS ネットワークの基本設計書', { placeholder: 'title' });
+txt(s, '6 サービスの見本。このラボで Claude が作ったもので、Kiro の出力とは形が違うことがある', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 10.5, color: C.accent1 });
+s.addImage({ path: 'docs/design-samples/aws-network/diagram.png', x: 0.5, y: 1.38, w: 9.0, h: 3.19, altText: 'AWS ネットワーク構成図。IGW と VGW から AZ ごとの Firewall を通って public・app へ。DX は主系・副系、WAF は ALB に関連付け', objectName: 'aws network diagram' });
+const nwParts = [
+  ['基本設計書', '目的・前提・構成図・通信の流れ・6 サービスの設計・可用性・監視・試験 13 項目・未決事項'],
+  ['パラメータシート', 'Excel 11 シート(VPC・サブネット・ルート・SG・DX・ALB・NAT・WAF・NFW・試験)'],
+];
+nwParts.forEach(([h, b], i) => {
+  const x = 0.5 + i * 4.55;
+  card(s, x, 4.62, 4.45, 0.55, 'nw part card ' + (i + 1));
+  txt(s, [{ text: h + ': ', options: { bold: true, color: C.accent5 } }, { text: b }], { x: x + 0.12, y: 4.66, w: 4.2, h: 0.48, fontSize: 9, valign: 'middle' });
+});
+s.addNotes('AWS ネットワークの基本設計書とパラメータシートの見本です。VPC、Direct Connect、ALB、NAT ゲートウェイ、WAF、Network Firewall を扱っています。これはこのラボで Claude が作ったもので、Kiro が実際に出す設計書とは形や項目が違うことがあります。会社名や IP アドレスはすべて架空です。構成は、東京リージョンの 2 つの AZ に public、firewall、app、db のサブネットを置き、インターネットとオンプレの出入りを両方とも Network Firewall で検査します。Direct Connect は 2 つのロケーションに 1 本ずつ、WAF は ALB に関連付けます。基本設計書には目的から試験、未決事項まで、パラメータシートは Excel の 11 シートです。');
+
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '要件定義書と設計書' });
+s.addText('設計書の矛盾は、計算で確かめる', { placeholder: 'title' });
+txt(s, '値を 1 か所に置いて設計書とパラメータシートを作り、ルートの行きと帰りなど 12 項目を機械的に確かめた', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11, color: C.accent1 });
+card(s, 0.5, 1.4, 4.2, 3.5, 'nw check card');
+txt(s, '確かめること(12 項目)', { x: 0.65, y: 1.48, w: 3.9, h: 0.3, fontSize: 12, bold: true, color: C.accent5 });
+const nwChecks = [
+  'サブネットが VPC の中・重ならない・オンプレと重ならない',
+  'ルートの行き先が定義済み、同じ AZ の Firewall・NAT を使う',
+  '外へ出る通信は必ず Firewall を通る',
+  '行きと帰りが同じ Firewall を通る(ずれると通信が切れる)',
+  'SG の参照先、WAF の WCU、DX の 2 ロケーションとコミュニティ',
+];
+txt(s, nwChecks.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < nwChecks.length - 1 } })), { x: 0.65, y: 1.85, w: 3.95, h: 3.0, fontSize: 10, paraSpaceAfter: 6 });
+card(s, 4.9, 1.4, 4.6, 3.5, 'nw found card');
+txt(s, '見つかった抜け(最初の版)', { x: 5.05, y: 1.48, w: 4.3, h: 0.3, fontSize: 12, bold: true, color: C.accent3 });
+s.addTable([
+  [{ text: '通信', options: KH }, { text: '行き', options: KH }, { text: '戻り', options: KH }],
+  [{ text: 'public → オンプレ' }, { text: 'Firewall 1a → VGW' }, { text: 'VGW → 直接(Firewall を飛ばす)', options: { color: C.accent3, bold: true } }],
+], { x: 5.05, y: 1.88, w: 4.3, colW: [1.25, 1.35, 1.7], fontSize: 9, color: C.background2, fill: { color: C.text1 }, border: { type: 'solid', pt: 1, color: C.text2 }, rowH: 0.42, valign: 'middle', objectName: 'nw found table' });
+const nwFix = [
+  '原因: VGW 側のルートテーブルに public サブネットの行が無かった',
+  '直し方: 行を足して、戻りも同じ AZ の Firewall へ',
+  'もう 1 つ: パラメータシートに Firewall のポリシー設定が無い(テストで発見)',
+];
+txt(s, nwFix.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < nwFix.length - 1 } })), { x: 5.05, y: 3.0, w: 4.35, h: 1.85, fontSize: 10, paraSpaceAfter: 6 });
+txt(s, 'Kiro で作った設計書にも同じ考え方が使える: 値を 1 か所に、矛盾は人の目でなく計算で。値は架空、本物の AWS には未投入', { x: 0.5, y: 4.97, w: 9, h: 0.28, fontSize: 9.5, color: C.accent6 });
+s.addNotes('この見本では、値を 1 か所に置いて、そこから設計書とパラメータシートの両方を作り、矛盾を計算で確かめました。確かめるのは 12 項目で、サブネットの重なり、同じ AZ の Firewall と NAT を使うか、外へ出る通信は必ず Firewall を通るか、そして行きと帰りが同じ Firewall を通るか、などです。最初の版で実際に抜けが見つかりました。public サブネットからオンプレへの通信は、行きは Firewall を通るのに、戻りは VGW 側のルートテーブルに public の行が無かったため、Firewall を飛ばして直接戻っていました。行きと帰りがずれるとステートフルの検査で通信が切れます。行を足して直しました。もう 1 つ、パラメータシートに Firewall のポリシーの設定が無いことをテストで見つけました。Kiro で作った設計書でも同じ考え方が使えます。値は 1 か所に置き、矛盾は人の目ではなく計算で確かめます。値は架空で、本物の AWS には入れていません。');
+
+// 操作手順
+pres.addSection({ title: '使い方と運用' });
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('操作手順: Kiro で AWS を作るまで', { placeholder: 'title' });
+const steps = [
+  ['人', '準備', 'Kiro を入れてサインイン。Git のリポジトリを開く'],
+  ['人', 'Steering', 'product.md・tech.md・structure.md を作らせ、会社の決まり・作り直しで止めるルールを足す'],
+  ['人', 'AWS の設定', 'MCP・Powers を入れ、読み取り用の AWS プロファイル(SSO)を用意'],
+  ['Kiro', 'Spec を作る', '依頼から requirements → design → tasks。各段階を人が読んで承認'],
+  ['Kiro', 'タスクを実行', 'Supervised モードで。ファイルを変えるたびに人が確認'],
+  ['Kiro', 'plan まで', 'fmt・validate・plan。作り直し(replace)が出たら止める'],
+  ['人', '反映', 'PR → CI の検査 → 人の承認 → CI/CD から apply'],
+  ['Kiro', '確かめる', 'describe で確認し、設計書・パラメータシートを作り直す'],
+];
+steps.forEach(([who, h, b], i) => {
+  const col = i % 2, row = Math.floor(i / 2);
+  const x = 0.5 + col * 4.6, y = 1.05 + row * 0.98;
+  const c = who === '人' ? C.accent2 : C.accent1;
+  hex(s, x, y + 0.02, 0.45, c, String(i + 1), 'step hex ' + (i + 1));
+  txt(s, `${h}(${who})`, { x: x + 0.55, y: y - 0.02, w: 3.85, h: 0.3, fontSize: 12, bold: true, color: C.background1 });
+  txt(s, b, { x: x + 0.55, y: y + 0.28, w: 3.85, h: 0.62, fontSize: 9.5 });
+});
+txt(s, 'Kiro が既定で使うのは Autopilot(任せる)。重要なコードや慣れないうちは Supervised(確認しながら)', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 9.5, color: C.accent6 });
+s.addNotes('Kiro で AWS を作るまでの操作手順です。まず Kiro を入れてサインインし、Git のリポジトリを開きます。次に Steering として product.md、tech.md、structure.md を作らせ、会社の決まりや、作り直しが出たら止めるルールを書き足します。MCP や Powers を入れ、AWS は読み取り用のプロファイルを用意します。ここから Kiro に依頼して Spec を作らせ、要件、設計、タスクの各段階を人が読んで承認します。タスクの実行は Supervised モードにして、ファイルを変えるたびに確認します。Kiro にやらせるのは plan までで、作り直しが出たら止めます。反映は PR と CI を通し、人が承認したあと CI/CD から行います。最後に describe で確かめ、設計書とパラメータシートを作り直します。Kiro の既定は Autopilot なので、慣れないうちは Supervised に切り替えるのがおすすめです。');
+
+// Kiro で作ったら変更も Kiro?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('Kiro で作ったら、変更も Kiro でないとだめ?', { placeholder: 'title' });
+txt(s, 'だめではない。Kiro が作るのは普通の IaC コードと Markdown で、Git に入る。人の手でも他の道具でも変えられる。Kiro をやめてもインフラは動き続ける', { x: 0.5, y: 0.98, w: 9, h: 0.5, fontSize: 11.5, color: C.accent1 });
+card(s, 0.5, 1.6, 4.35, 3.3, 'change must card');
+card(s, 5.15, 1.6, 4.35, 3.3, 'change kiro card');
+txt(s, 'どの道具で変えても守ること', { x: 0.75, y: 1.72, w: 3.9, h: 0.32, fontSize: 13, bold: true, color: C.accent3 });
+const chMust = [
+  '変更は必ず IaC から。コンソールで直接変えない(コードと実物がずれる)',
+  'ずれは定期的に見つける: terraform plan / CloudFormation のドリフト検出',
+  'Kiro 以外で変えたら、Spec と設計書も直す',
+  '本番への反映は、いつでも PR → CI → 人の承認 → CI/CD',
+];
+txt(s, chMust.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < chMust.length - 1 } })), { x: 0.75, y: 2.1, w: 3.95, h: 2.7, fontSize: 10.5, paraSpaceAfter: 6 });
+txt(s, 'Kiro で変えると楽なこと', { x: 5.4, y: 1.72, w: 3.9, h: 0.32, fontSize: 13, bold: true, color: C.accent5 });
+const chKiro = [
+  '変更も Spec から: requirements と design を直してから tasks を作らせると、仕様と実物が揃ったまま残る',
+  'Steering と Hooks の決まり(作り直しで止める など)が、毎回自動で効く',
+  '前回の Spec が残っているので、なぜその構成にしたかを追える',
+];
+txt(s, chKiro.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < chKiro.length - 1 } })), { x: 5.4, y: 2.1, w: 3.95, h: 2.7, fontSize: 10.5, paraSpaceAfter: 6 });
+txt(s, '大事なのは道具をそろえることより、「変更は IaC から・仕様と実物を揃える」を守ること', { x: 0.5, y: 4.98, w: 9, h: 0.28, fontSize: 11.5, italic: true, color: C.accent2 });
+s.addNotes('Kiro で作ったら変更も Kiro でないといけない、ということはありません。Kiro が作るのは普通の IaC のコードと Markdown で、Git に入ります。人の手でも、ほかの道具でも変えられますし、Kiro をやめてもインフラは動き続けます。どの道具で変えるにしても守ることは、変更は必ず IaC から行いコンソールで直接変えないこと、ずれを定期的に見つけること、Kiro 以外で変えたら Spec と設計書も直すこと、本番への反映はいつでも PR と CI と人の承認を通すことです。Kiro で変えると、Spec を直してからタスクを作るので仕様と実物が揃ったまま残り、Steering や Hooks の決まりも毎回効くので楽になります。');
+
+// 操作手順書も作れる?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('作業手順書・運用手順書も Kiro で作れる?', { placeholder: 'title' });
+txt(s, '下書きなら作れる。IaC のコードと tasks.md・describe の結果から、コマンドと確認方法の入った手順書を起こせる', { x: 0.5, y: 0.98, w: 9, h: 0.42, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: '手順書の章', options: KH }, { text: 'Kiro に書かせる中身', options: KH }, { text: '人が確かめること', options: KH }],
+  [kn('事前確認'), { text: '今の状態を見る describe・plan のコマンドと、期待する結果' }, { text: '作業してよい状態か(連絡・作業時間)' }],
+  [kn('作業手順'), { text: '順番どおりのコマンド(CI/CD の実行手順を含む)' }, { text: '順番・待ち時間・止める条件' }],
+  [kn('確認方法'), { text: '1 手順ごとの確認コマンドと、正しいときの出力' }, { text: '期待値が実物と合っているか' }],
+  [kn('切り戻し'), { text: '前の版に戻す手順(前のコミットで apply など)' }, { text: '本当に戻せるか(作り直しは戻せないことがある)' }],
+  [kn('運用(日々の手順)'), { text: '監視・アラート時の確認・証明書の更新などの手順' }, { text: '担当と連絡先、判断の基準' }],
+], { x: 0.5, y: 1.45, w: 9.0, colW: [1.9, 3.85, 3.25], fontSize: 10, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.42, valign: 'middle', objectName: 'runbook table' });
+card(s, 0.5, 4.1, 9.0, 0.8, 'runbook note card');
+txt(s, [
+  { text: 'こつ: ', options: { bold: true, color: C.accent5 } },
+  { text: '会社の手順書のひな形を Steering に入れる / 値は現物から / 検証環境で手順書どおりに一度通してから本番へ / Direct Connect の物理作業は事業者の手順と合わせる' },
+], { x: 0.7, y: 4.18, w: 8.6, h: 0.65, fontSize: 10.5 });
+txt(s, '手順書の正しさは、検証環境で実際に通して初めてわかる', { x: 0.5, y: 4.98, w: 9, h: 0.28, fontSize: 11.5, italic: true, color: C.accent2 });
+s.addNotes('作業手順書や運用手順書も、下書きなら Kiro で作れます。IaC のコードと tasks.md、describe の結果から、コマンドと確認方法の入った手順書を起こせます。事前確認、作業手順、確認方法、切り戻し、日々の運用の章ごとに、Kiro に書かせる中身と、人が確かめることを分けました。特に切り戻しは、作り直しが起きた変更だと戻せないことがあるので、人が確かめます。会社の手順書のひな形を Steering に入れ、値は現物から起こし、検証環境で手順書どおりに一度通してから本番に使ってください。Direct Connect の物理作業は、事業者の手順と合わせる必要があります。');
+
+// チャットで firewall を変えられる?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('Claude のようにチャットで firewall も変えられる?', { placeholder: 'title' });
+txt(s, 'できる。ただし「装置にログインする」のではなく、手元の AWS の権限で API を呼ぶ形。本番は直接変えず、チャット → IaC の差分 → 承認 → CI/CD が正しい', { x: 0.5, y: 0.98, w: 9, h: 0.5, fontSize: 11.5, color: C.accent1 });
+card(s, 0.5, 1.6, 4.35, 3.3, 'fw direct card');
+card(s, 5.15, 1.6, 4.35, 3.3, 'fw iac card');
+txt(s, 'A. チャットから直接変える', { x: 0.75, y: 1.72, w: 3.9, h: 0.32, fontSize: 13, bold: true, color: C.accent3 });
+const fwDirect = [
+  'Kiro が aws-cli か AWS の MCP サーバーで API を呼ぶ(セキュリティグループ・NACL・Network Firewall・WAF)',
+  '効くのは Kiro に渡した権限の範囲だけ。動くのは手元の PC の資格情報',
+  'セキュリティグループの変更はすぐ効く。間違えると自分の接続も切れる',
+  'コードと実物がずれ、レビューも残らない → 検証環境・調査まで',
+];
+txt(s, fwDirect.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < fwDirect.length - 1 } })), { x: 0.75, y: 2.1, w: 3.95, h: 2.7, fontSize: 10.5, paraSpaceAfter: 6 });
+txt(s, 'B. チャットで IaC を直させる(本番)', { x: 5.4, y: 1.72, w: 3.95, h: 0.32, fontSize: 13, bold: true, color: C.accent5 });
+const fwIac = [
+  '「443 を社内だけに」と頼むと、Kiro が IaC のルールを書き換えて plan まで出す',
+  '人が差分を読む(削除・0.0.0.0/0・作り直しが無いか)',
+  'PR → CI → 人の承認 → CI/CD が反映。Kiro に本番の書き込み権限は渡さない',
+  'オンプレの FortiGate・Palo Alto も、Terraform のプロバイダがあれば同じ流れ',
+];
+txt(s, fwIac.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < fwIac.length - 1 } })), { x: 5.4, y: 2.1, w: 3.95, h: 2.7, fontSize: 10.5, paraSpaceAfter: 6 });
+txt(s, 'このラボの Claude も同じ: 模擬装置はチャットから直接変えたが、自宅の実機(WS-C3650)はユーザーが手で入れた', { x: 0.5, y: 4.98, w: 9, h: 0.28, fontSize: 10.5, italic: true, color: C.accent2 });
+s.addNotes('Claude とのチャットのように、Kiro からも firewall などを変えられるか、という質問への答えは「できる」です。ただし装置にログインして設定するのではなく、手元の PC にある AWS の資格情報で、aws-cli や AWS の MCP サーバーを通して API を呼ぶ形になります。セキュリティグループ、ネットワーク ACL、Network Firewall、WAF などが対象で、効くのは Kiro に渡した権限の範囲だけです。チャットから直接変えるやり方は、セキュリティグループならすぐ効くので速い反面、間違えると自分の接続まで切れますし、コードと実物がずれ、レビューも残りません。検証環境や調査までにとどめます。本番では、チャットで IaC のルールを書き換えさせて plan まで出させ、人が差分を読み、PR、CI、人の承認を経て CI/CD から反映します。Kiro には本番の書き込み権限を渡しません。オンプレの FortiGate や Palo Alto も、Terraform のプロバイダがあれば同じ流れにできます。このラボの Claude も同じで、模擬装置はチャットから直接変えましたが、自宅の実機はユーザーが手で設定しました。');
+
+// 人が介在する手順書は IaC の前と後?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('人が入る手順は、IaC の作業の前と後?', { placeholder: 'title' });
+txt(s, 'ほぼ合っている。ただし「途中」もある: 差分を読んで承認するところは、IaC の真ん中に人が入る。もう一つ、IaC の外の作業も人の手順', { x: 0.5, y: 0.98, w: 9, h: 0.5, fontSize: 11.5, color: C.accent1 });
+const phase3 = [
+  ['作業前', C.accent2, ['変更の申請と承認・作業時間・関係者への連絡', '今のルールを記録(describe・書き出し)', '切り戻す条件を決める(何が起きたら戻すか)']],
+  ['途中(承認)', C.accent3, ['plan・変更セットの差分を読む(削除・0.0.0.0/0・作り直し)', 'PR とデプロイの承認', '反映そのものは CI/CD。人も Kiro も手で apply しない']],
+  ['作業後', C.accent5, ['通すべき通信が通る・止めるべき通信が止まる', 'ログで確かめる(VPC フローログ・Firewall のログ)', '監視・ずれの確認、完了の連絡。だめなら切り戻し']],
+];
+phase3.forEach(([h, col, items], i) => {
+  const x = 0.5 + i * 3.05;
+  card(s, x, 1.6, 2.9, 2.75, 'phase3 card ' + (i + 1));
+  hex(s, x + 0.15, 1.72, 0.42, col, String(i + 1), 'phase3 hex ' + (i + 1));
+  txt(s, h, { x: x + 0.68, y: 1.75, w: 2.1, h: 0.35, fontSize: 13, bold: true, color: col, valign: 'middle' });
+  txt(s, items.map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < items.length - 1 } })), { x: x + 0.15, y: 2.25, w: 2.65, h: 2.05, fontSize: 10, paraSpaceAfter: 5 });
+});
+card(s, 0.5, 4.45, 9.0, 0.5, 'outside iac card');
+txt(s, [
+  { text: 'IaC の外: ', options: { bold: true, color: C.accent4 } },
+  { text: '相手側の firewall・DX の事業者・他チームの設定、利用者での確認も、人の作業として書く' },
+], { x: 0.7, y: 4.52, w: 8.6, h: 0.4, fontSize: 10.5, valign: 'middle' });
+txt(s, 'Kiro が書くのは手順書の下書きと確認のコマンド。決めて・承認して・確かめるのが人', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 10, italic: true, color: C.accent2 });
+s.addNotes('人が入る手順書は、IaC の作業の前と後か、という質問です。ほぼ合っていますが、もう一か所あります。IaC の途中、plan や変更セットの差分を読んで承認するところです。作業前は、変更の申請と承認、作業時間と関係者への連絡、今のルールの記録、切り戻す条件の決定です。途中は、差分の中に削除や 0.0.0.0/0 の許可、作り直しが無いかを読み、PR とデプロイを承認します。反映そのものは CI/CD が行い、人も Kiro も手で apply しません。作業後は、通すべき通信が通り、止めるべき通信が止まることを確かめ、VPC フローログや Firewall のログでも確認し、監視とずれの確認、完了の連絡をします。だめなら切り戻します。さらに、相手側の firewall や Direct Connect の事業者、他チームの設定、実際の利用者での確認のように IaC の外にある作業も、人の作業として手順書に書きます。');
+
+// Kiro への依頼のしかた
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('設定を反映するとき、Kiro にどう頼む?', { placeholder: 'title' });
+txt(s, '「反映して」とは頼まない。頼むのは「IaC を直して plan まで、PR にして」まで。反映は CI/CD', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+card(s, 0.5, 1.38, 3.0, 3.55, 'steering card');
+txt(s, '0. 先に決まりを書く', { x: 0.65, y: 1.46, w: 2.75, h: 0.3, fontSize: 12, bold: true, color: C.accent4 });
+txt(s, '.kiro/steering/aws-change.md(一度だけ)', { x: 0.65, y: 1.76, w: 2.75, h: 0.25, fontSize: 9, color: C.accent6 });
+const steerRules = [
+  'apply と aws の書き込み系コマンドは実行しない',
+  '変えるのは terraform/ の下だけ',
+  'plan に削除・作り直し・0.0.0.0/0 があれば止めて報告',
+  'PR 本文に plan の要約・影響範囲・切り戻し・確認コマンド',
+];
+txt(s, steerRules.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < steerRules.length - 1 } })), { x: 0.65, y: 2.08, w: 2.75, h: 2.3, fontSize: 9.5, paraSpaceAfter: 5 });
+txt(s, 'これで毎回の依頼が短くなる', { x: 0.65, y: 4.5, w: 2.75, h: 0.3, fontSize: 9.5, italic: true, color: C.accent5 });
+const asks = [
+  ['Spec を作らせる', '本番の ALB 用 SG で、443 の受け付けを 0.0.0.0/0 から社内の 203.0.113.0/24 だけに絞りたい。対象は terraform/prod/network/sg_alb.tf。Spec を作って', '要件・設計・作業項目を 1 段ずつ人が承認'],
+  ['plan まで', 'タスクを実行して。fmt・validate・plan まで。apply はしないで。削除・作り直し・0.0.0.0/0 があれば先に教えて', '人が plan の差分を読む(途中の承認)'],
+  ['PR にさせる', 'feature/sg-alb-restrict でコミットして PR を作って。本文に plan の要約・影響範囲・切り戻し・確認コマンドを', 'CI → 人の承認 → CI/CD が反映'],
+  ['反映後に確かめる', '反映が終わった。describe-security-groups で 443 のルールを確認して表で。パラメータシートも更新して', '期待どおりかを人が見る'],
+];
+asks.forEach(([h, q, who], i) => {
+  const y = 1.38 + i * 0.9;
+  hex(s, 3.7, y + 0.05, 0.4, C.accent1, String(i + 1), 'ask hex ' + (i + 1));
+  txt(s, h, { x: 4.2, y: y, w: 1.9, h: 0.28, fontSize: 11.5, bold: true, color: C.background1 });
+  txt(s, '→ ' + who, { x: 6.1, y: y + 0.02, w: 3.4, h: 0.26, fontSize: 9, color: C.accent2 });
+  txt(s, '「' + q + '」', { x: 4.2, y: y + 0.3, w: 5.3, h: 0.55, fontSize: 9.5, color: C.background2 });
+});
+txt(s, 'こつ: 環境・ファイル・やりたいことを具体的に / やってほしくないことを書く / 確かめ方も頼む。「本番の SG 直しておいて」は NG', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 9.5, color: C.accent6 });
+s.addNotes('Kiro で設定を反映するときの頼み方です。ポイントは「反映して」とは頼まないことです。頼むのは、IaC を直して plan まで出し、PR にするところまでで、本番への反映は CI/CD が行います。まず一度だけ、Steering に決まりを書いておきます。apply や AWS の書き込み系のコマンドは実行しない、変えるのは terraform の下だけ、plan に削除や作り直し、0.0.0.0/0 の許可があれば止めて報告する、PR の本文には plan の要約と影響範囲、切り戻しと確認のコマンドを書く、といった内容です。これで毎回の依頼が短くなります。依頼は 4 回に分けます。1 回目は、環境とファイルとやりたいことを書いて Spec を作らせ、要件、設計、作業項目を 1 段ずつ承認します。2 回目は plan まで実行させ、人が差分を読みます。3 回目は PR を作らせ、CI と人の承認を経て CI/CD が反映します。4 回目は反映後に describe で確かめさせ、パラメータシートも更新させます。「本番の SG 直しておいて」のようなあいまいな頼み方は、権限があれば Kiro が API で直接変えてしまうおそれがあるので避けます。1 行の小さな変更なら、Spec を作らずチャットで頼んでも十分です。');
+
+// 設定を入れるのは誰?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('Kiro が IaC を作り、人が aws-cli で入れる?', { placeholder: 'title' });
+txt(s, '少し違う。IaC なら設定を入れるのは IaC の道具(terraform apply・変更セット・cdk deploy)。aws-cli は作業前後の確認(describe)に使う', { x: 0.5, y: 0.98, w: 9, h: 0.5, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: 'やり方', options: KH }, { text: '設定を入れるもの', options: KH }, { text: '人の役割', options: KH }, { text: '気をつけること', options: KH }],
+  [kn('IaC + CI/CD(おすすめ)'), { text: 'パイプラインが terraform apply など' }, { text: '差分を読んで承認' }, { text: '承認した差分だけが入る。記録が Git に残る' }],
+  [kn('IaC + 手で入れる'), { text: '人が terraform apply tfplan など' }, { text: '承認したうえで自分で入れる' }, { text: 'plan -out で保存した差分をそのまま入れる。CloudFormation は変更セットを確かめて実行' }],
+  [kn('手順書(IaC なし)'), { text: '人が aws-cli を貼り付け' }, { text: '手順書を確認して入れる' }, { text: 'コードが無いので実物とそろわない。切り戻しは別に書く。記録は CloudTrail だけ' }],
+], { x: 0.5, y: 1.6, w: 9.0, colW: [2.1, 2.2, 1.9, 2.8], fontSize: 10, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.62, valign: 'middle', objectName: 'apply who table' });
+card(s, 0.5, 4.2, 9.0, 0.7, 'apply who note card');
+txt(s, [
+  { text: 'CI/CD が無いとき: ', options: { bold: true, color: C.accent5 } },
+  { text: 'terraform plan -out=tfplan → 人が差分を読む → terraform apply tfplan。Kiro に頼めば手順書(3 つ目)も書けるが、それは IaC ではない' },
+], { x: 0.7, y: 4.27, w: 8.6, h: 0.58, fontSize: 10.5, valign: 'middle' });
+txt(s, 'どのやり方でも、aws-cli は「確かめる」ために使うのが基本', { x: 0.5, y: 4.98, w: 9, h: 0.28, fontSize: 11.5, italic: true, color: C.accent2 });
+s.addNotes('Kiro が IaC を作り、人が aws-cli で設定を入れる、という理解は少し違います。IaC にした場合、設定を入れるのは IaC の道具です。Terraform なら terraform apply、CloudFormation なら変更セットの実行、CDK なら cdk deploy で、本番ではこれを CI/CD が流します。aws-cli は、作業前と作業後に describe などで確かめるために使います。CI/CD が無い会社では人が手で入れますが、その場合も打つのは aws-cli ではなく、terraform plan -out で保存した差分を terraform apply tfplan でそのまま入れる形です。Kiro に aws-cli の手順書を書かせて人が貼り付けるやり方もできますが、それは IaC ではなく昔ながらの手順書の作業で、コードが無いので実物とそろわず、切り戻しも別に書く必要があり、記録は CloudTrail だけになります。');
+
+// AWS を変える方法: 直接変えるか、IaC か
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('Kiro で AWS を変える方法は? 直接か IaC か', { placeholder: 'title' });
+txt(s, 'PR → CI/CD → 人の承認に乗るのは IaC の 3 つだけ。直接変える方法は、実行したその場で AWS が変わる', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: '種類', options: KH }, { text: '方法', options: KH }, { text: '承認の流れ', options: KH }, { text: '反映する命令・使いどころ', options: KH }],
+  [kn('直接変える'), { text: 'AWS の MCP サーバー経由の API、Cloud Control API、SDK(boto3 など)、aws-cli' }, { text: '乗らない', options: { color: THEME.colors.accent3, bold: true } }, { text: '実行した時点で変わる。本番は読み取り(describe)だけにする' }],
+  [kn('IaC'), { text: 'Terraform' }, { text: '乗る', options: { color: THEME.colors.accent5, bold: true } }, { text: 'terraform plan → apply' }],
+  [kn(''), { text: 'CloudFormation' }, { text: '乗る', options: { color: THEME.colors.accent5, bold: true } }, { text: 'aws cloudformation deploy、または変更セット(create → execute)。ここだけ命令に aws-cli を使う' }],
+  [kn(''), { text: 'AWS CDK' }, { text: '乗る', options: { color: THEME.colors.accent5, bold: true } }, { text: 'cdk diff → cdk deploy(中身は CloudFormation)' }],
+], { x: 0.5, y: 1.38, w: 9.0, colW: [1.2, 3.0, 1.1, 3.7], fontSize: 9.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: [0.3, 0.6, 0.38, 0.55, 0.38], valign: 'middle', objectName: 'change method table' });
+txt(s, '正しい流れ', { x: 0.5, y: 3.72, w: 9, h: 0.28, fontSize: 12, bold: true, color: C.accent5 });
+const flow = ['Kiro が IaC を書き、差分(plan・変更セット)を出して PR', 'CI が検査', '人が差分を読んで承認', 'CI/CD が反映(apply・deploy・変更セットの実行)', 'aws-cli の describe で確かめる'];
+flow.forEach((t, i) => {
+  const x = 0.5 + i * 1.82;
+  card(s, x, 4.05, 1.72, 0.85, 'flow card ' + (i + 1));
+  hex(s, x + 0.08, 4.12, 0.32, i === 2 ? C.accent2 : C.accent1, String(i + 1), 'flow hex ' + (i + 1));
+  txt(s, t, { x: x + 0.45, y: 4.1, w: 1.22, h: 0.75, fontSize: 8.5, valign: 'middle' });
+});
+txt(s, '「aws-cli で IaC を書く」ではない。IaC はコード、aws-cli は確認用(CloudFormation の反映だけは例外)', { x: 0.5, y: 4.98, w: 9, h: 0.26, fontSize: 10, italic: true, color: C.accent2 });
+s.addNotes('Kiro で AWS を変える方法の整理です。大きく 2 種類に分かれます。1 つ目は直接変える方法で、AWS の MCP サーバー経由で API を呼ぶ、Cloud Control API、boto3 などの SDK、そして aws-cli です。これらは実行した時点で AWS が変わってしまうので、PR、CI/CD、人の承認という流れには乗りません。本番では読み取り、つまり describe のような確認だけに使います。2 つ目は IaC で、Terraform、CloudFormation、AWS CDK の 3 つです。これらはコードなので、PR から承認までの流れに乗ります。反映する命令は、Terraform は terraform apply、CDK は cdk deploy、CloudFormation は aws cloudformation deploy か変更セットの作成と実行です。CloudFormation だけは反映の命令に aws-cli を使うので、「aws-cli で反映する」は CloudFormation に限れば半分正しい言い方です。正しい流れは、Kiro が IaC を書いて差分を出し PR にする、CI が検査する、人が差分を読んで承認する、CI/CD が反映する、最後に aws-cli の describe で確かめる、の 5 段です。');
+
+// 設定の正しさは別の AI に確かめさせる?
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('設定の正しさは、別の AI に確かめさせればよい?', { placeholder: 'title' });
+txt(s, '良い方法。ただし人の承認の代わりではなく、確認を一段増やすもの。機械の検査・別の AI・人・実際の通信を重ねる', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+const layers = [
+  ['機械的な検査', 'terraform validate・tflint・checkov・cfn-lint・cfn-guard', '必ず守る規則(22 番を 0.0.0.0/0 に開けない など)。何度やっても同じ結果', C.accent4],
+  ['別の AI', '要件定義書と plan の差分を突き合わせる', '要件とのずれ・書き間違い・影響範囲の見落とし', C.accent1],
+  ['人', '差分を読んで承認', '社内の事情に合っているか。責任は人が持つ', C.accent2],
+  ['実際の通信', 'VPC Reachability Analyzer・Network Access Analyzer・実際の接続', '本当に通るか、本当に止まるか', C.accent5],
+];
+layers.forEach(([h, how, what, col], i) => {
+  const y = 1.4 + i * 0.6;
+  hex(s, 0.5, y, 0.44, col, String(i + 1), 'layer hex ' + (i + 1));
+  txt(s, h, { x: 1.05, y: y + 0.02, w: 1.5, h: 0.36, fontSize: 12, bold: true, color: col, valign: 'middle' });
+  txt(s, how, { x: 2.55, y: y - 0.02, w: 3.3, h: 0.48, fontSize: 9.5, color: C.background1, valign: 'middle' });
+  txt(s, what, { x: 5.95, y: y - 0.02, w: 3.55, h: 0.48, fontSize: 9.5, valign: 'middle' });
+});
+card(s, 0.5, 3.85, 4.4, 1.08, 'ai ask card');
+txt(s, '別の AI への頼み方', { x: 0.65, y: 3.92, w: 4.1, h: 0.28, fontSize: 11, bold: true, color: C.accent1 });
+txt(s, '×「これで大丈夫?」\n○「この要件とこの plan の差分を比べて、合わない点を全部挙げて」', { x: 0.65, y: 4.22, w: 4.1, h: 0.66, fontSize: 9.5 });
+card(s, 5.1, 3.85, 4.4, 1.08, 'ai limit card');
+txt(s, 'AI だけでは足りない', { x: 5.25, y: 3.92, w: 4.1, h: 0.28, fontSize: 11, bold: true, color: C.accent3 });
+txt(s, '社内の事情(どの IP が本社か)は知らない / 間違っていても「問題なし」と答える / 書いた設定が正しくても、通るかは別', { x: 5.25, y: 4.22, w: 4.1, h: 0.66, fontSize: 9.5 });
+txt(s, 'このラボでも、コードを読むだけでは見つからず、動かして初めて見つかったバグが多かった', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 10, italic: true, color: C.accent2 });
+s.addNotes('設定の正しさを別の AI に確かめさせるのは良い方法です。ただし人の承認の代わりではなく、確認を一段増やすものとして使います。おすすめは 4 段に重ねることです。1 段目は terraform validate や checkov などの機械的な検査で、22 番を 0.0.0.0/0 に開けない、のような必ず守る規則を見ます。何度やっても同じ結果になるのが強みです。2 段目が別の AI で、要件定義書と plan の差分を突き合わせ、要件とのずれや書き間違いを探させます。頼み方は「これで大丈夫?」ではなく、「合わない点を全部挙げて」とします。3 段目は人で、社内の事情に合っているかを見て承認し、責任を持ちます。4 段目は反映後の実際の通信で、VPC Reachability Analyzer や Network Access Analyzer、実際の接続で、本当に通るか、本当に止まるかを確かめます。AI は社内の事情を知らず、間違っていても問題なしと答えることがあり、書いた設定が正しくても通るかは別の話です。このラボでも、動かして初めて見つかったバグがたくさんありました。');
+
+// Kiro から AWS の状態を見る
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('Kiro から AWS の状態を直接見られる?', { placeholder: 'title' });
+txt(s, '見られる。Kiro のターミナルの aws-cli か AWS の MCP サーバーで読む。渡すのは読み取りの権限だけ', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+s.addTable([
+  [{ text: '見るもの', options: KH }, { text: '例', options: KH }],
+  [kn('設定'), { text: 'describe-security-groups・describe-route-tables・describe-load-balancers・describe-target-health' }],
+  [kn('状態・数値'), { text: 'CloudWatch のメトリクスとアラーム、Direct Connect の接続と BGP(describe-virtual-interfaces)' }],
+  [kn('変更の記録'), { text: 'CloudTrail(誰がいつ何を変えたか)、AWS Config(設定の移り変わり)' }],
+  [kn('IaC とのずれ'), { text: 'terraform plan -refresh-only、CloudFormation のドリフト検出' }],
+], { x: 0.5, y: 1.4, w: 9.0, colW: [1.8, 7.2], fontSize: 10, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.36, valign: 'middle', objectName: 'status check table' });
+card(s, 0.5, 3.35, 4.4, 1.58, 'status ask card');
+txt(s, '頼み方の例', { x: 0.65, y: 3.43, w: 4.1, h: 0.28, fontSize: 11, bold: true, color: C.accent1 });
+txt(s, '「本番の ALB のターゲットの状態と、ALB 用 SG の 443 番のルールを読み取りだけで確認して、表にして。設定は変えないで」', { x: 0.65, y: 3.75, w: 4.1, h: 1.1, fontSize: 10 });
+card(s, 5.1, 3.35, 4.4, 1.58, 'status rule card');
+txt(s, '使うときの決まり', { x: 5.25, y: 3.43, w: 4.1, h: 0.28, fontSize: 11, bold: true, color: C.accent3 });
+const stRules = [
+  'ViewOnlyAccess・SecurityAudit など設定だけ見る権限を、SSO の一時的な資格情報で(ReadOnlyAccess は S3 の中身なども読める)',
+  '読んだ結果(IP・構成)は AI に送られる。秘密は読ませない',
+  '本当に防ぐのは権限。Steering の決まりだけに頼らない',
+];
+txt(s, stRules.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < stRules.length - 1 } })), { x: 5.25, y: 3.73, w: 4.15, h: 1.15, fontSize: 9, paraSpaceAfter: 3 });
+txt(s, 'このラボでも Claude は /api/cli で装置の状態を直接読んで確かめた。設計書の道具も describe しか呼ばない', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 10, italic: true, color: C.accent2 });
+s.addNotes('Kiro から AWS の状態を直接見ることはできます。Kiro は手元の PC で動くので、Kiro のターミナルから aws-cli を打つか、AWS の MCP サーバーを通して、実際の AWS を読めます。見られるのは、セキュリティグループやルートテーブル、ロードバランサー、ターゲットの状態などの設定、CloudWatch のメトリクスとアラーム、Direct Connect の接続と BGP の状態、CloudTrail と AWS Config の変更の記録、それに terraform plan の refresh-only やドリフト検出による IaC と実物のずれです。頼むときは「読み取りだけで確認して、設定は変えないで」と書きます。決まりとして、渡すのは ViewOnlyAccess や SecurityAudit のような設定だけを見る権限にし、SSO の一時的な資格情報で渡します。ReadOnlyAccess は S3 の中身など一部のデータそのものも読めてしまいます。読んだ結果は AI に送られるので、秘密は読ませません。書き込みを本当に防ぐのは権限で、Steering の決まりだけに頼りません。このラボでも Claude は装置の状態を直接読んで確かめていて、設計書の道具も describe しか呼びません。Kiro そのものでは試していません。');
+
+// 会社の firewall の設定から AWS Network Firewall を作る
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('今の firewall から Network Firewall を作れる?', { placeholder: 'title' });
+txt(s, '下書きなら作れる。大事なのは「元のルール 1 本ずつがどこへ移ったか」の対応表も作らせ、人が突き合わせること', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11.5, color: C.accent1 });
+card(s, 0.5, 1.4, 2.9, 3.5, 'fwmig make card');
+txt(s, 'Kiro に作らせるもの', { x: 0.65, y: 1.48, w: 2.6, h: 0.3, fontSize: 12, bold: true, color: C.accent5 });
+const fwMake = [
+  'Network Firewall の IaC(ポリシー・ステートフルのルールグループ・IP セット / ポートセット)',
+  '対応表: 元のルール番号 → 新しいルール。移さないものは理由',
+  '確認用の通信の一覧(通るべき・止まるべき)',
+];
+txt(s, fwMake.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < fwMake.length - 1 } })), { x: 0.65, y: 1.85, w: 2.65, h: 3.0, fontSize: 10, paraSpaceAfter: 6 });
+const FKH = { bold: true, color: C.text1, fill: { color: C.accent2 }, fontSize: 10 };
+s.addTable([
+  [{ text: '今の機器(FortiGate・Palo Alto・ASA)', options: FKH }, { text: 'AWS 側(人が決めるところ)', options: FKH }],
+  [kn('ゾーン(inside・outside・DMZ)'), { text: 'ゾーンは無い。VPC・サブネットとルートテーブルで通り道を作る(一番大変)' }],
+  [kn('上から順に、最初に一致したもの'), { text: '順番を守るなら strict order を選ぶ' }],
+  [kn('NAT'), { text: 'Network Firewall は NAT をしない。NAT ゲートウェイなどを別に' }],
+  [kn('IPsec VPN'), { text: 'Site-to-Site VPN などで別に作る' }],
+  [kn('アプリ・ユーザーの識別、ウイルス対策、URL カテゴリ'), { text: '一部はドメインの一覧・Suricata ルール・TLS 検査で。同じにはならないものもある' }],
+  [kn('単純な許可ルール'), { text: 'セキュリティグループで足りることが多い' }],
+], { x: 3.6, y: 1.4, w: 5.9, colW: [2.4, 3.5], fontSize: 9, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.48, valign: 'middle', objectName: 'fw mapping table' });
+txt(s, '設定の書き方を変えるのは AI が速い。通り道(ゾーン → VPC・ルート)の設計は人', { x: 0.5, y: 5.0, w: 9, h: 0.25, fontSize: 10.5, italic: true, color: C.accent2 });
+s.addNotes('今の会社の firewall の設定を Kiro に貼り付けて、AWS Network Firewall の設定を作ることはできます。ただし下書きまでで、大事なのは、元のルール 1 本ずつが新しい設定のどこへ移ったかの対応表も作らせて、人が突き合わせることです。Kiro に作らせるのは、Network Firewall の IaC、つまりポリシー、ステートフルのルールグループ、元の機器のアドレスやサービスのオブジェクトに当たる IP セットとポートセット、それに対応表と、確認用の通信の一覧です。そのまま移らないところもあります。今の機器のゾーンは AWS には無く、VPC とサブネット、ルートテーブルで通り道を作ります。ここが一番大変です。上から順に評価する作りを守るなら strict order を選びます。Network Firewall は NAT をしないので NAT ゲートウェイなどを別に用意し、IPsec VPN も別に作ります。アプリやユーザーの識別、ウイルス対策、URL カテゴリは、一部をドメインの一覧や Suricata ルール、TLS 検査で置き換えますが、同じにはならないものもあります。単純な許可ルールは、セキュリティグループで足りることが多いです。');
+
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('firewall の移行: 貼り付ける前と、進め方', { placeholder: 'title' });
+card(s, 0.5, 1.05, 4.35, 3.85, 'fwmig caution card');
+txt(s, '貼り付ける前に', { x: 0.75, y: 1.15, w: 3.9, h: 0.32, fontSize: 13, bold: true, color: C.accent3 });
+const fwCaution = [
+  '会社の設定は機密。VPN の事前共有鍵・管理者パスワードのハッシュ・SNMP のコミュニティ名は消すか置き換える。必要ならグローバル IP・社内のホスト名も',
+  '社外の AI に渡してよいかを社内の決まりで確かめる。Kiro のデータの扱い(学習に使われる設定など)も確認',
+  '使っていないルールが混ざっている。ヒット数を見て整理してから移すと、対応表の確認が楽',
+];
+txt(s, fwCaution.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < fwCaution.length - 1 } })), { x: 0.75, y: 1.55, w: 3.95, h: 3.25, fontSize: 10.5, paraSpaceAfter: 8 });
+const fwSteps = [
+  ['機密を伏せて渡す', 'ルールの一覧と対応表を作らせる'],
+  ['人が対応表を確かめる', '移さないルールの理由・ゾーンの置き換え'],
+  ['IaC と plan', '機械の検査・別の AI で確かめ、人が承認'],
+  ['検証環境で全部試す', '通るべき通信・止まるべき通信'],
+  ['しばらく並行で動かす', '今の機器とログを比べてから切り替え'],
+];
+fwSteps.forEach(([h, b], i) => {
+  const y = 1.05 + i * 0.77;
+  hex(s, 5.15, y + 0.03, 0.44, i === 1 || i === 3 ? C.accent2 : C.accent1, String(i + 1), 'fwmig step hex ' + (i + 1));
+  txt(s, h, { x: 5.72, y: y, w: 3.8, h: 0.3, fontSize: 12, bold: true, color: C.background1 });
+  txt(s, b, { x: 5.72, y: y + 0.32, w: 3.8, h: 0.3, fontSize: 10 });
+});
+txt(s, '次のページ: ラボの模擬 IPCOM で実際に変換して、元の機器と結果を比べた', { x: 0.5, y: 4.97, w: 9, h: 0.3, fontSize: 9.5, color: C.accent6 });
+s.addNotes('firewall の移行で、設定を貼り付ける前に気をつけることと、進め方です。会社の設定は機密情報なので、VPN の事前共有鍵、管理者パスワードのハッシュ、SNMP のコミュニティ名は消すか置き換えます。必要ならグローバル IP や社内のホスト名も伏せます。社外の AI に渡してよいかを社内の決まりで確かめ、Kiro のデータの扱いも確認します。長年使ってきた設定には使っていないルールが混ざっているので、ヒット数を見て整理してから移すと、対応表の確認が楽になります。進め方は 5 段階です。機密を伏せて渡してルールの一覧と対応表を作らせ、人が対応表を確かめ、IaC と plan を作らせて機械の検査と別の AI で確かめてから人が承認し、検証環境で通るべき通信と止まるべき通信を全部試し、できればしばらく今の機器と並行して動かしてログを比べてから切り替えます。次のページで、このラボの模擬 IPCOM の設定を実際に変換して確かめた結果を見ます。');
+
+// ラボで試した: 模擬 IPCOM → Network Firewall
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: '使い方と運用' });
+s.addText('ラボで試した: 模擬 IPCOM → Network Firewall', { placeholder: 'title' });
+txt(s, '設定の文字を読んで、Network Firewall の設定・対応表・確認用の通信を作る道具(tools/fw_migrate/ipcom_to_nfw.py)', { x: 0.5, y: 0.98, w: 9, h: 0.3, fontSize: 11, color: C.accent1 });
+const ipStats = [
+  ['6 → 8', '元のルール → 新しいルール(ポートごとに分けた)', C.accent1],
+  ['3 / 3', '移した / 要確認(送信元 any の外側のルール)', C.accent2],
+  ['OK', 'API の型定義(botocore)で JSON の形を確認', C.accent5],
+  ['3 行', '機密(パスワード・コミュニティ・事前共有鍵)は値を出さない', C.accent4],
+];
+ipStats.forEach(([v, d, col], i) => {
+  const y = 1.42 + i * 0.86;
+  card(s, 0.5, y, 3.6, 0.76, 'ipcom stat card ' + (i + 1));
+  txt(s, v, { x: 0.65, y: y + 0.08, w: 1.05, h: 0.6, fontSize: 20, bold: true, color: col, valign: 'middle' });
+  txt(s, d, { x: 1.7, y: y + 0.08, w: 2.3, h: 0.6, fontSize: 9.5, valign: 'middle' });
+});
+card(s, 4.3, 1.42, 5.2, 3.44, 'ipcom diff card');
+txt(s, '確認用の通信 21 本のうち、1 本で結果が違った', { x: 4.5, y: 1.52, w: 4.85, h: 0.32, fontSize: 12.5, bold: true, color: C.accent3 });
+s.addTable([
+  [{ text: '通信', options: KH }, { text: '元の機器', options: KH }, { text: '新しいルール', options: KH }],
+  [{ text: 'LAN(192.168.10.10)→ 外 22/tcp' }, { text: 'PASS(LAN の lan-out)', options: { color: C.accent5, bold: true } }, { text: 'DROP(sid 12000)', options: { color: C.accent3, bold: true } }],
+], { x: 4.5, y: 1.92, w: 4.85, colW: [1.95, 1.45, 1.45], fontSize: 9.5, color: C.background2, fill: { color: C.text1 }, border: { type: 'solid', pt: 1, color: C.text2 }, rowH: 0.4, valign: 'middle', objectName: 'ipcom diff table' });
+const ipWhy = [
+  '原因: WAN に付いていた ssh-deny(送信元 any → 22 を止める)は、元は「外から入る通信」だけに効いた',
+  'Network Firewall にはインタフェースの区別が無く、LAN から外へ出る ssh まで止めてしまう',
+  '直し方は人が決める: 送信元を外側に絞る、またはルールの順番を変える',
+];
+txt(s, ipWhy.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < ipWhy.length - 1 } })), { x: 4.5, y: 2.95, w: 4.85, h: 1.85, fontSize: 10, paraSpaceAfter: 6 });
+txt(s, '書き方を変えただけでは見えない違いを、両方の判定を計算して比べると見つけられる。IPCOM の構文は模擬、本物の AWS には未投入', { x: 0.5, y: 4.95, w: 9, h: 0.3, fontSize: 9.5, color: C.accent6 });
+s.addNotes('このラボで、模擬の IPCOM の設定を実際に Network Firewall の設定に変換してみました。道具は設定の文字を読み、Network Firewall の JSON と Terraform、対応表、確認用の通信を作ります。元のルール 6 本は、ポートごとに分けて新しいルール 8 本になりました。3 本はそのまま移せて、送信元が any の外側のルール 3 本は要確認にしています。JSON の形は、aws-cli と同じ AWS の API の型定義で確かめました。パスワード、SNMP のコミュニティ、VPN の事前共有鍵の 3 行は、値をどこにも出さず行番号だけを残します。確認用の通信 21 本について、元の機器ならどうなるか、新しいルールならどうなるかを両方計算して比べたところ、1 本だけ結果が違いました。LAN から外への ssh です。元の機器では LAN 側のルールで許可されますが、新しいルールでは、WAN に付いていた ssh を止めるルールが先に当たって止まってしまいます。元は外から入る通信だけに効いていたルールが、インタフェースの区別が無くなって内側の通信にも効いたためです。直し方は人が決めます。書き方を変えるだけでは見えない違いが、両方の判定を比べることで見つかりました。なお IPCOM の構文は模擬で、本物の AWS には入れていません。');
+
+// ほかの AWS の AI 開発ツール
+pres.addSection({ title: 'ほかの AWS の AI ツール' });
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'ほかの AWS の AI ツール' });
+s.addText('Kiro 以外の AWS の AI 開発ツールとの違い', { placeholder: 'title' });
+s.addTable([
+  [{ text: 'ツール', options: KH }, { text: '何のための道具か', options: KH }, { text: 'Kiro との違い', options: KH }],
+  [kn('Kiro(エディタ・CLI・Web)'), { text: '仕様(Specs)から入って、コード・IaC を作る' }, { text: '—(この資料の主役)' }],
+  [kn('Kiro CLI'), { text: 'ターミナルで使う Kiro' }, { text: 'Amazon Q Developer CLI の後継(2025-11)。q コマンドもそのまま使える' }],
+  [kn('Amazon Q Developer'), { text: '今の IDE に足す補完・チャット。AWS コンソールでの質問・調査' }, { text: '仕様から入る作りは無い。コンソール連携は Q Developer 側の機能' }],
+  [kn('AWS Transform'), { text: '移行・モダナイズ専用(VMware・メインフレーム・.NET)' }, { text: '新しく作る道具ではなく、今あるものを AWS へ移す道具。VMware のネットワーク変換も扱う' }],
+  [kn('AWS DevOps Agent'), { text: '運用・障害対応(原因の調査、改善の提案)' }, { text: '作った後の運用の道具。2026-03 に一般提供' }],
+  [kn('Amazon Bedrock(AgentCore)'), { text: '自分で AI エージェントを作る基盤' }, { text: '道具そのものではなく、道具を作るための部品' }],
+], { x: 0.5, y: 1.05, w: 9.0, colW: [2.4, 3.1, 3.5], fontSize: 9.5, color: C.background2, fill: { color: C.text2 }, border: { type: 'solid', pt: 1, color: C.text1 }, rowH: 0.52, valign: 'middle', objectName: 'aws ai tools table' });
+txt(s, '得意な場面が違う: 作る・相談する・移す・守る・自作する', { x: 0.5, y: 4.85, w: 9, h: 0.3, fontSize: 11.5, italic: true, color: C.accent2 });
+s.addNotes('Kiro 以外にも、AWS には AI の開発ツールがいくつかあります。Kiro CLI は、以前の Amazon Q Developer CLI の後継で、2025 年 11 月に切り替わりました。q コマンドもそのまま使えます。Amazon Q Developer は今の IDE に足す補完やチャット、AWS コンソールでの質問や調査の道具で、仕様から入る作りはありません。AWS Transform は VMware やメインフレーム、.NET を AWS へ移すための道具で、VMware のネットワーク変換も扱います。AWS DevOps Agent は作った後の運用、障害の原因調査や改善の提案の道具で、2026 年 3 月に一般提供になりました。Amazon Bedrock の AgentCore は、自分で AI エージェントを作るための基盤です。');
+
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'ほかの AWS の AI ツール' });
+s.addText('VPC・DX・ALB・NLB では何を使う?', { placeholder: 'title' });
+const phases = [
+  ['移す', 'AWS Transform', '今の VMware 環境から移すなら、構成の洗い出し・依存関係・ネットワーク設定の変換・移行の順番づけ', C.accent4],
+  ['作る', 'Kiro', '要件・設計 → VPC・DX・ALB・NLB の IaC → plan まで。手順書・設計書の下書き', C.accent1],
+  ['相談する', 'Amazon Q Developer', 'AWS コンソールで「このサブネットの経路は?」などを聞く。今の IDE のまま補完', C.accent5],
+  ['守る', 'AWS DevOps Agent', '障害のときの原因調査、改善の提案(どこまで触れるかは Agent Space で決める)', C.accent3],
+  ['自作する', 'Amazon Bedrock', '会社独自の確認や自動化を AI エージェントにしたいとき(AgentCore)', C.accent2],
+];
+phases.forEach(([h, tool, b, col], i) => {
+  const y = 1.05 + i * 0.75;
+  hex(s, 0.5, y, 0.5, col, String(i + 1), 'phase hex ' + (i + 1));
+  txt(s, h, { x: 1.15, y: y + 0.02, w: 1.1, h: 0.4, fontSize: 13, bold: true, color: C.background1, valign: 'middle' });
+  txt(s, tool, { x: 2.25, y: y + 0.02, w: 2.2, h: 0.4, fontSize: 12, bold: true, color: col, valign: 'middle' });
+  txt(s, b, { x: 4.45, y: y - 0.02, w: 5.05, h: 0.62, fontSize: 10, valign: 'middle' });
+});
+txt(s, 'どれでも同じ: 権限は最小限、本番は人の承認と CI/CD から。DX の物理と契約はどの AI もコードにできない', { x: 0.5, y: 4.88, w: 9, h: 0.28, fontSize: 10, color: C.accent6 });
+s.addNotes('VPC、Direct Connect、ALB、NLB の仕事に当てはめると、使い分けはこうなります。今の VMware 環境から移すなら、AWS Transform で構成の洗い出しやネットワーク設定の変換、移行の順番づけを行います。新しく作る部分は Kiro で要件と設計を作り、IaC を書いて plan まで進めます。日々の相談は AWS コンソールの Amazon Q Developer で、作った後の障害対応は AWS DevOps Agent が担います。会社独自の確認を AI にしたいときは Amazon Bedrock で自作します。どれを使っても、権限は最小限にして、本番は人の承認と CI/CD から反映する、という決まりは同じです。この資料ではこれらのツールを実際には動かしておらず、2026 年 11 月時点の公式情報で整理しています。');
+
+// まとめ
+pres.addSection({ title: 'まとめ' });
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'まとめ' });
+s.addText('まとめ', { placeholder: 'title' });
+const sumItems = [
+  ['Kiro は AWS 向けの道具がそろった AI 開発ツール', 'Specs・Steering・Hooks・MCP・Powers。仕様から入るので文書が残る'],
+  ['速くなるのは書く・調べる・出す', '決めること(CIDR・経路・権限・費用)と確かめることは人に残る'],
+  ['権限の渡し方がいちばん大事', '読み取り用だけ渡し、本番は人の承認のあと CI/CD から反映'],
+  ['Direct Connect は物理と契約が絡む', 'コードにできるのは AWS 側の一部。経路は二重に確かめる'],
+  ['要件定義書・設計書・手順書は下書きまで', '値は現物(IaC・describe)から起こし、検証環境で通して、レビューと承認は人'],
+  ['変更は Kiro でなくてもよい', '成果物は普通の IaC と Markdown。変更は IaC から、仕様と実物を揃える'],
+];
+sumItems.forEach(([h, b], i) => {
+  const y = 1.05 + i * 0.66;
+  hex(s, 0.55, y, 0.45, C.accent1, String(i + 1), 'sum hex ' + (i + 1));
+  txt(s, h, { x: 1.15, y: y - 0.03, w: 8.3, h: 0.32, fontSize: 13.5, bold: true, color: C.background1 });
+  txt(s, b, { x: 1.15, y: y + 0.28, w: 8.3, h: 0.32, fontSize: 10.5 });
+});
+s.addNotes('まとめです。Kiro は AWS 向けの道具がそろった AI 開発ツールで、仕様から入るので文書が残ります。速くなるのは書く、調べる、出すの部分で、決めることと確かめることは人に残ります。いちばん大事なのは権限の渡し方で、Kiro には読み取り用だけを渡し、本番への反映は人が承認したあと CI/CD から行います。Direct Connect は物理と契約が絡むので、コードにできるのは AWS 側の一部です。要件定義書や設計書は下書きまでで、値は現物から起こし、レビューと承認は人が行います。');
+
+// 出典
+s = pres.addSlide({ masterName: 'CONTENT_DARK', sectionTitle: 'まとめ' });
+s.addText('出典と、確かめていないこと', { placeholder: 'title' });
+const srcs = [
+  'Kiro Docs(CLI・Cloud sessions・Autonomous agent の sandbox・Authentication・Autopilot・Q からの移行)、Kiro FAQ・Pricing — kiro.dev',
+  'Amazon Q Developer ユーザーガイド(Kiro への移行)・AWS Transform・AWS DevOps Agent の発表 — aws.amazon.com / docs.aws.amazon.com',
+  'AWS MCP Server(Deployment SOPs・Getting started) — docs.aws.amazon.com',
+  'AWS IaC MCP Server の紹介 — aws.amazon.com/blogs/devops',
+  'HashiCorp の Terraform power — hashicorp.com/blog',
+  'AWS Builder Center・SD Times の Kiro の記事',
+];
+txt(s, srcs.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < srcs.length - 1 } })), { x: 0.5, y: 1.1, w: 9, h: 2.3, fontSize: 11.5, paraSpaceAfter: 6 });
+card(s, 0.5, 3.55, 9.0, 1.35, 'src note card');
+txt(s, '確かめていないこと', { x: 0.7, y: 3.65, w: 8.6, h: 0.3, fontSize: 12.5, bold: true, color: C.accent3 });
+txt(s, 'Kiro 自体は動かしていない(内容は 2026-11-22 時点の公式情報)。設計書を作る道具の --aws(本物の AWS)は未確認。版の番号・プラン・プレビュー機能の範囲はよく変わるので、使う前に最新の Docs で確かめる。リンクの一覧は docs/ai-driven-aws.md', { x: 0.7, y: 3.98, w: 8.6, h: 0.85, fontSize: 10.5 });
+s.addNotes('出典は、Kiro の公式ドキュメント、AWS MCP Server のドキュメント、AWS と HashiCorp のブログなどです。Kiro 自体は実際には動かしていません。設計書を作る道具の本物の AWS 向けの使い方も、まだ試していません。版やプラン、プレビュー機能の範囲はよく変わるので、使う前に最新のドキュメントで確かめてください。');
+
+(async () => {
+  await pres.writeFile({ fileName: OUT });
+  await applyTheme(OUT, THEME);
+  console.log('wrote', OUT);
+})();

@@ -1,10 +1,57 @@
-# kiro-aws — AWS Kiro まとめ
+# kiro-aws — AWS Kiro 資料まとめ(統合版)
 
-[w-index-m/nirvana-lab](https://github.com/w-index-m/nirvana-lab) の調査記録から、AWS の Kiro に関する部分を抜き出してまとめたものです。
-元の文章は `docs/source/` にそのまま置いてあります。
+AWS Kiro と AWS 構築まわりの資料を **1 か所に統合** したリポジトリです。
+元は [w-index-m/nirvana-lab](https://github.com/w-index-m/nirvana-lab) の調査記録と、別途作成された 2 つの資料一式(「AWS資料まとめ」「AWS WAFとKiro調査」)で、
+Kiro・AWS を **二重に調べていた** ため、重なりと食い違いを整理してここに束ねています。
 
-> **注意**: 元資料の Kiro の内容は **2026-11-22〜25 時点の公式ドキュメント・記事で確かめた整理**で、Kiro 自体は実際には動かしていません。
-> 版・提供範囲・料金はよく変わるので、使う前に最新の Docs で確認してください。
+> 値・会社名・IP・ASN はすべて架空(サンプル)。Kiro 自体は実際には動かしておらず、内容は 2026-11 時点の公式情報による整理です。版・機能・料金はよく変わるので、使う前に最新の公式 Docs で確認してください。
+
+## どこに何があるか
+
+| フォルダ | 中身 | まず開くもの |
+|---|---|---|
+| `01_Kiro資料/` | Kiro で AWS を作る資料(34 枚)と文章版 | `ai-driven-dev-kiro.pptx` / `.pdf`、`ai-driven-aws.md` |
+| `02_AWSネットワーク設計書サンプル/` | VPC・DX・ALB・NAT・WAF・Network Firewall の基本設計書・パラメータシート・矛盾チェック(**サンプル A**、VPC `10.20.0.0/16`) | `出力/basic-design.md`、`出力/parameter-sheet.xlsx` |
+| `03_FirewallからNetworkFirewallへの移行/` | 模擬 IPCOM → Network Firewall の下書き・対応表・確認用通信 | `README.md`、`出力/report.md` |
+| `04_ALB設計書の自動作成/` | ALB の describe から設計書・パラメータシートを作る | `出力/basic-design.md` |
+| `05_DirectConnect_BGP/` | DX のオンプレ側 BGP 設計をラボで先に検証 | `README.md` |
+| `06_ラボのALB模擬/` | aws-cli 構文で動く模擬 ALB | `README.md` |
+| `07_AWS_WAFとKiro調査/` | WAF の方式設計・VPC/DX 方式設計(**サンプル B**、VPC `10.10.0.0/16`)・Terraform サンプル・Kiro の画面/料金調査スライド(42 枚) | `docs/AWS_WAFとKiro調査.pdf`、`design/` |
+| `08_補助資料/` | AI エージェントのサンドボックス比較 | `ai-agent-sandboxes.md` |
+
+下の「1〜11 章」は Kiro と AWS 構築の要点まとめ(主に `01`)、「12 章」は `07` の要点です。
+
+## 二重調査の整理(重なり・食い違い・使い分け)
+
+| テーマ | `01`〜`06`(AWS資料まとめ) | `07`(WAFとKiro調査) | 扱い |
+|---|---|---|---|
+| Kiro の使い方・AWS 構築 | **主資料**(34 枚 + 文章版、最新) | 概要・料金・画面のみ | 手順・決まりごとは `01` を正とする |
+| Kiro の料金・プラン・画面・BYOK・他エディタ連携 | なし | **主資料**(スライド 19〜42) | `07` を正とする |
+| VPC・DX の方式設計サンプル | `02`(`10.20.0.0/16`、Network Firewall で入出を検査、DX 2 ロケーション、BGP コミュニティで主系選択) | `07/design`(`10.10.0.0/16`、Network Firewall 未採用、VLAN 100/101、Local Pref で接続 A 優先) | **別サンプル。値は互換性なし**(下記)。どちらか 1 つを正にして使う |
+| WAF 設計 | `02` に簡易版(マネージド 4 + 回数制限) | **詳細版**(6 ルール・WCU・ログ・試験観点・セキュリティ機能比較) | WAF の詳細は `07` を正とする |
+| Network Firewall | `02`(設計に組込み)・`03`(既存 FW からの移行) | `07` は比較表のみ(未採用) | `02`・`03` を正とする |
+| Terraform | `03` の `main.tf`(Network Firewall のみ) | `07/terraform`(VPC・DX・NACL/SG) | 補完関係。両方使える |
+| 設計書の自動生成ツール | `02`・`03`・`04` の Python | `07/tools/build_waf_design.py` | 対象が別。重複なし |
+| `ai-driven-aws.md` | 新版(`01`:「AWS を変える方法: 直接か IaC か」を追記、スライド番号が 1 つずれる) | — | 旧版は置き換え済み(Git 履歴に残る) |
+
+### 食い違い(要判断)
+
+1. **VPC CIDR が違う**: サンプル A `10.20.0.0/16` / サンプル B `10.10.0.0/16`。サブネット・ルート・NACL・Terraform の `terraform.tfvars` まで値が連鎖するので、混ぜて使わない。
+2. **WAF のルール数が違う**: A は 4 マネージド + 回数制限、B は許可 IP + 回数制限 + 4 マネージドの 6 ルール(約 1,128 WCU)。回数制限のしきい値(2,000 回/5 分)は共通。
+3. **Network Firewall の有無**: A は IGW/VGW のエッジルートで常時検査する構成、B は未採用(WAF + NACL/SG のみ)。採用するなら B のルート設計を改版する必要がある。
+4. **命名**: A は `shop-prd-*`、B は `sample-prd-*`。
+
+→ 今後の方針案: サンプル A(`02`)を基準にし、B の WAF 詳細・Terraform の値を A に合わせて作り直す。または B を独立した「WAF 単体のサンプル」として残す。どちらにするかは未決。
+
+## 注意
+
+- `01`〜`06` の README・設計書内のリンクは nirvana-lab 内の場所を指しており、このリポジトリ内では切れていることがあります(元は上記リポジトリで確認できます)。
+- `道具/` の Python は Python 3.10 以降。Excel 出力には openpyxl、API 形状の確認には botocore が必要(無ければその部分は飛ばされます)。
+- `07/tools/make_deck.js` は画像フォルダ(kiroimg)が無いとそのままでは動きません。スライド内の Kiro 画面は公式スクリーンショットなので、公開時は利用条件を確認してください。
+
+---
+
+# 要点まとめ
 
 ## 1. Kiro とは
 
@@ -128,21 +175,21 @@ ALB の HTTPS は ACM 証明書が必要(同一リージョン)。順番は VPC 
 
 ## 11. サンドボックス比較(Kiro の位置づけ)
 
-Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot cloud agent など)と同様の使い捨て隔離環境だが、**外への通信が既定で制限なし**(他は許可制/既定オフが多い)。詳細は `docs/source/ai-agent-sandboxes.md`。
+Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot cloud agent など)と同様の使い捨て隔離環境だが、**外への通信が既定で制限なし**(他は許可制/既定オフが多い)。詳細は `08_補助資料/ai-agent-sandboxes.md`。
 
 ## 12. AWS WAF と Kiro 調査(追加資料)
 
-`waf-kiro/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書サンプル・Terraform サンプル・生成スクリプト)を取り込んでいます。
+`07_AWS_WAFとKiro調査/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書サンプル・Terraform サンプル・生成スクリプト)を取り込んでいます。
 内容はすべてサンプルで、2026-11-25 時点(スライド v1.26)の整理です。
 
 | パス | 内容 |
 |---|---|
-| `waf-kiro/docs/AWS_WAFとKiro調査.pptx` / `.pdf` | 調査スライド(42 枚) |
-| `waf-kiro/design/AWS_WAF_方式設計書_サンプル.xlsx` / `.md` | WAF 方式設計書(v1.3) |
-| `waf-kiro/design/AWS_WAF_画面一覧_入力サンプル.xlsx` | WAF 設定画面の入力サンプル |
-| `waf-kiro/design/AWS_VPC_DX_方式設計書_パラメータシート_サンプル.xlsx` / `.md` | VPC / Direct Connect 方式設計 |
-| `waf-kiro/terraform/` | VPC・DX・NACL/SG の Terraform サンプル(`terraform.tfvars` がパラメータシートに対応) |
-| `waf-kiro/tools/` | スライド生成 `make_deck.js`、設計書生成 `build_waf_design.py` |
+| `07_AWS_WAFとKiro調査/docs/AWS_WAFとKiro調査.pptx` / `.pdf` | 調査スライド(42 枚) |
+| `07_AWS_WAFとKiro調査/design/AWS_WAF_方式設計書_サンプル.xlsx` / `.md` | WAF 方式設計書(v1.3) |
+| `07_AWS_WAFとKiro調査/design/AWS_WAF_画面一覧_入力サンプル.xlsx` | WAF 設定画面の入力サンプル |
+| `07_AWS_WAFとKiro調査/design/AWS_VPC_DX_方式設計書_パラメータシート_サンプル.xlsx` / `.md` | VPC / Direct Connect 方式設計 |
+| `07_AWS_WAFとKiro調査/terraform/` | VPC・DX・NACL/SG の Terraform サンプル(`terraform.tfvars` がパラメータシートに対応) |
+| `07_AWS_WAFとKiro調査/tools/` | スライド生成 `make_deck.js`、設計書生成 `build_waf_design.py` |
 
 注意: `make_deck.js` は画像フォルダ(kiroimg)が無いとそのままでは動きません。スライド内の Kiro 画面は Kiro 公式のスクリーンショットなので、公開時は利用条件を確認してください。
 
@@ -177,11 +224,3 @@ Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot c
 - **BYOK(自分の API キー)**: 公式対応は今回の調査では確認できず(GitHub に要望 #9367・#1409)
 - **他エディタとの関係**: VS Code 内では ACP(`kiro-cli acp`)とコミュニティ拡張、Visual Studio / Eclipse は Kiro CLI を併用、JetBrains は AI Assistant にカスタムエージェントとして追加
 - **WAF の設定変更を Kiro に頼む流れ**、**CLI(AWS CLI)の結果を Kiro で使う方法**、**Steering・Skills・Powers の違い**(誰が・いつ書くか)、**Power の守備範囲(Aurora DSQL の例)** はスライド 33〜41 を参照
-
-## 元資料
-
-- `docs/source/ai-driven-aws.md` — AI ドリブンで AWS を作るなら(Kiro の節を含む全文・出典 URL 付き)
-- `docs/source/ai-agent-sandboxes.md` — AI エージェントのサンドボックス比較
-- `waf-kiro/` — AWS WAF と Kiro 調査(上記 12 章)
-
-nirvana-lab にはほかに Kiro 解説デッキ(`tools/decks/ai_driven_dev_kiro_deck.js`)、`docs/fw-migrate-ipcom-to-nfw.md`、`docs/aws-network-design-sample.md`、`docs/design-docs-from-describe.md` があります(未取り込み)。
