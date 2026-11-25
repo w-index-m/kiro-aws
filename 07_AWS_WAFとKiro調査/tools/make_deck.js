@@ -1,5 +1,17 @@
 const pptxgen = require("pptxgenjs");
-const SKILL = "/root/.claude/skills/synced/873d3bbd-f5ee-4b8c-9a98-2572553cb7c0_eea210e2-e365-400d-9ef2-489ddbf84912/pptx";
+const fs = require("fs");
+const path = require("path");
+// pptx スキルのディレクトリ(環境変数 PPTX_SKILL で指定。無ければ ~/.claude/skills/synced/*/pptx を探す)
+function findSkill() {
+  if (process.env.PPTX_SKILL) return process.env.PPTX_SKILL;
+  const base = path.join(process.env.HOME || "/root", ".claude/skills/synced");
+  for (const d of fs.existsSync(base) ? fs.readdirSync(base) : []) {
+    const p = path.join(base, d, "pptx");
+    if (fs.existsSync(path.join(p, "scripts/apply_theme.js"))) return p;
+  }
+  throw new Error("pptx skill が見つかりません。PPTX_SKILL にそのディレクトリを指定してください");
+}
+const SKILL = findSkill();
 const { applyTheme } = require(SKILL + "/scripts/apply_theme.js");
 
 const THEME = {
@@ -13,7 +25,7 @@ const THEME = {
     hlink: "F28C28", folHlink: "5B7C99",
   },
 };
-const OUT = "/home/claude/out/AWS_WAFとKiro調査.pptx";
+const OUT = process.env.DECK_OUT || path.join(__dirname, "..", "docs", "AWS_WAFとKiro調査.pptx");
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
@@ -22,7 +34,7 @@ pres.title = "AWS WAFとKiro調査";
 pres.author = "Claude";
 const C = pres.SchemeColor;
 const S = pres.ShapeType;
-const FOOT = "AWS WAFとKiro調査 v1.26";
+const FOOT = "AWS WAFとKiro調査 v1.27";
 
 // ---------------------------------------------------------------- layouts
 pres.defineSlideMaster({
@@ -94,25 +106,25 @@ pres.addSection({ title: "概要" });
 {
   const s = pres.addSlide({ masterName: "TITLE", sectionTitle: "概要" });
   s.addText("AWS WAFとKiro調査", { placeholder: "title" });
-  s.addText("AWS WAFの方式設計(サンプル)と、Kiroの画面・料金・使い方\nv1.26  2026-11-25", { placeholder: "body" });
-  s.addNotes("本資料はサンプル値を含みます。実案件の値に置き換えてください。");
+  s.addText("AWS WAFの方式設計(02_AWSネットワーク設計書サンプルの構成)と、Kiroの画面・料金・使い方\nv1.27  2026-11-25", { placeholder: "body" });
+  s.addNotes("本資料はサンプル値を含みます。実案件の値に置き換えてください。v1.27で、02_AWSネットワーク設計書サンプル(shop-prd-*、VPC 10.20.0.0/16、Network Firewall採用)に値を統一した。");
 }
 
 // ---------------------------------------------------------------- 2 overview
 {
   const s = content("全体像:ALBの手前で攻撃を遮断", "概要");
-  const names = ["Internet", "IGW", "ALB + Web ACL", "App\n(Private-App)", "DB\n(Private-DB)"];
+  const names = ["Internet", "IGW", "Network\nFirewall", "ALB + Web ACL", "App・DB\n(Private)"];
   const x0 = 0.6, bw = 2.0, gap = 0.53, y = 1.6, h = 1.2;
   names.forEach((t, i) => {
     const x = x0 + i * (bw + gap);
-    const hl = i === 2;
+    const hl = i === 3;
     card(s, x, y, bw, h, "Flow box " + (i + 1), hl ? C.accent1 : C.background2);
     s.addText(t, { x, y, w: bw, h, align: "center", valign: "middle", fontSize: 16, bold: true, color: C.text1, margin: 4, isTextBox: true, objectName: "Flow label " + (i + 1) });
     if (i < names.length - 1) arrow(s, x + bw + 0.065, y + h / 2 - 0.2, "Flow arrow " + (i + 1));
   });
   const cw = 3.9, cg = 0.215, cy = 3.35, ch = 2.9;
   tcard(s, 0.6, cy, cw, ch, "Card purpose", "目的", "SQLインジェクション等のL7攻撃、既知の不正入力、悪性IP、過剰アクセスを、ALBに届く前に検知・遮断する。", { tsize: 20, bsize: 18 });
-  tcard(s, 0.6 + cw + cg, cy, cw, ch, "Card target", "保護対象", "sample-prd-alb(Publicサブネット 1a/1c)に、Web ACL sample-prd-waf-alb を関連付ける。", { tsize: 20, bsize: 18 });
+  tcard(s, 0.6 + cw + cg, cy, cw, ch, "Card target", "保護対象", "shop-prd-alb(Publicサブネット 1a/1c)に、Web ACL shop-prd-webacl を関連付ける。インターネットからの通信は、先にNetwork Firewallを通る。", { tsize: 20, bsize: 18 });
   tcard(s, 0.6 + 2 * (cw + cg), cy, cw, ch, "Card scope", "スコープと既定動作", "リージョナル(ap-northeast-1)。どのルールにも一致しない通信は許可(ブロックリスト方式)。", { tsize: 20, bsize: 18 });
   s.addNotes("Web ACLは、ルールの並びとデフォルトアクションをまとめた設定の単位。ALBなどに関連付けて使う。");
 }
@@ -160,7 +172,7 @@ pres.addSection({ title: "概要" });
     "VPC向けのマネージドFW。ステートフル検査、IPS(Suricata互換)、ドメインフィルタ\nルール評価:ステートレス → ステートフル → デフォルトアクション\n検査VPCにマルチAZで配置し、ルーティング経由で通信を通す",
     { tsize: 20, bsize: 16 });
   tcard(s, 6.77, 1.5, 5.96, 3.1, "Card nf2", "WAFとの使い分け",
-    "WAF:L7。SQLi/XSS、レート制限、ボット対策。ALBなどに関連付け\nNetwork Firewall:L3〜L7。IPS、ドメイン制御。VPC全体の通信が対象\n本構成はWAFのみ採用し、Network Firewallは未採用",
+    "WAF:L7。SQLi/XSS、レート制限、ボット対策。ALBなどに関連付け\nNetwork Firewall:L3〜L7。IPS、ドメイン制御。VPC全体の通信が対象\n本構成はNetwork FirewallでインターネットとオンプレとのL3〜L7の出入りを、WAFでALB手前のL7を担当する",
     { tsize: 20, bsize: 16 });
   const cats = [["予防", "WAF / Shield / SG・NACL / DNS Firewall"], ["検知", "GuardDuty / Inspector / Macie"], ["集約・調査", "Security Hub / Detective"], ["管理", "Firewall Manager(複数アカウント)"]];
   cats.forEach((c, i) => {
@@ -176,12 +188,12 @@ pres.addSection({ title: "設定方法" });
 {
   const s = content("設定の全体の流れ", "設定方法");
   const st = [
-    ["事前準備", "IP set、ログ用S3バケット、関連付け先のALBを用意する"],
+    ["事前準備", "ログ用のロググループ、関連付け先のALBを用意する"],
     ["Web ACLを作成", "名前・リージョン・関連付けるALBを指定する"],
-    ["ルールを追加", "自前ルール(許可IP、レート制限)とマネージドルールを追加"],
+    ["ルールを追加", "自前ルール(レート制限)とマネージドルールを追加"],
     ["優先度を決める", "番号の小さい順に評価。既定動作はAllow"],
     ["作成して確認", "Reviewで内容を確認し、Create web ACL"],
-    ["ログを有効化", "S3 の aws-waf-logs- で始まる名前へ出力"],
+    ["ログを有効化", "CloudWatch Logs の aws-waf-logs- で始まる名前へ出力"],
     ["Countで運用", "全ルールをCountにして、ログで誤検知を確認"],
     ["Blockへ切替", "問題のないルールから順にBlockへ"],
   ];
@@ -193,7 +205,7 @@ pres.addSection({ title: "設定方法" });
     cardText(s, t[0], t[1], x, y + 0.7, 2.9, 1.65, "Flow text " + (i + 1), { tsize: 18, bsize: 15 });
   });
   note(s, "操作の詳細は次ページ以降(作成手順、自前ルール、ログと確認)。画面の名称や並びは更新されるため、実画面で確認する。", 6.7);
-  s.addNotes("1の事前準備は、ルールから参照するIP setと、ログの出力先を先に作っておく意味。Web ACLの作成後でもルールは追加できる。");
+  s.addNotes("1の事前準備は、ログの出力先と関連付け先のALBを先に用意しておく意味。Web ACLの作成後でもルールは追加できる。");
 }
 
 {
@@ -216,13 +228,13 @@ pres.addSection({ title: "設定方法" });
     [
       { text: "入力サンプル", options: { bold: true, fontSize: 18, breakLine: true, color: C.background1 } },
       { text: "名前", options: { bold: true, fontSize: 13, color: C.accent6, breakLine: true } },
-      { text: "sample-prd-waf-alb", options: { fontSize: 15, color: C.background1, breakLine: true } },
+      { text: "shop-prd-webacl", options: { fontSize: 15, color: C.background1, breakLine: true } },
       { text: "メトリクス名", options: { bold: true, fontSize: 13, color: C.accent6, breakLine: true } },
-      { text: "sample-prd-waf-alb", options: { fontSize: 15, color: C.background1, breakLine: true } },
+      { text: "shop-prd-webacl", options: { fontSize: 15, color: C.background1, breakLine: true } },
       { text: "リージョン / 種別", options: { bold: true, fontSize: 13, color: C.accent6, breakLine: true } },
       { text: "ap-northeast-1 / Regional", options: { fontSize: 15, color: C.background1, breakLine: true } },
       { text: "関連付け先", options: { bold: true, fontSize: 13, color: C.accent6, breakLine: true } },
-      { text: "sample-prd-alb", options: { fontSize: 15, color: C.background1, breakLine: true } },
+      { text: "shop-prd-alb", options: { fontSize: 15, color: C.background1, breakLine: true } },
       { text: "デフォルトアクション", options: { bold: true, fontSize: 13, color: C.accent6, breakLine: true } },
       { text: "Allow(どのルールにも一致しない通信)", options: { fontSize: 15, color: C.background1 } },
     ],
@@ -232,24 +244,24 @@ pres.addSection({ title: "設定方法" });
 }
 
 {
-  const s = content("自前ルールの設定:許可IPとレート制限", "設定方法");
-  tcard(s, 0.6, 1.5, 5.96, 4.2, "Card ipset", "許可IP(優先度1)",
-    "先に IP sets > Create IP set で作成\n名前 sample-prd-ipset-trusted\nアドレス 203.0.113.10/32、198.51.100.0/24\nAdd my own rules and rule groups > Rule builder で、IP setに一致するルールを作る\nアクション = Allow",
+  const s = content("自前ルールの設定:レート制限", "設定方法");
+  tcard(s, 0.6, 1.5, 5.96, 4.2, "Card rate", "レート制限(優先度50)",
+    "Add my own rules and rule groups > Rule builder で、種別に Rate-based rule を選ぶ\n名前 shop-prd-rate-limit\nしきい値 2,000(サンプル値)\n評価ウィンドウ 5分、集約キー IPアドレス\nアクション = Block(最初はCount)",
     { tsize: 22, bsize: 18 });
-  tcard(s, 6.77, 1.5, 5.96, 4.2, "Card rate", "レート制限(優先度2)",
-    "Add my own rules and rule groups > Rule builder で、種別に Rate-based rule を選ぶ\n名前 sample-rate-limit\nしきい値 2,000(サンプル値)\n評価ウィンドウ 5分、集約キー IPアドレス\nアクション = Block(最初はCount)",
+  tcard(s, 6.77, 1.5, 5.96, 4.2, "Card noallow", "許可IPのルールは置かない",
+    "保守拠点からの通信も、WAFの検査を通す\nAllowに一致すると以降のルールを評価しないため、置くなら対象を最小限にする\n必要になったら、IP setを先に作り、優先度1のAllowルールとして追加する",
     { tsize: 22, bsize: 18 });
   card(s, 0.6, 5.9, 12.13, 0.85, "Own rule banner bg", C.text1);
-  s.addText("マネージドルール(優先度3〜6)は、後のページの「Add managed rule groups」の手順で1つずつ追加する。", { x: 0.6, y: 5.9, w: 12.13, h: 0.85, fontSize: 16, bold: true, color: C.background1, margin: 14, valign: "middle", isTextBox: true, objectName: "Own rule banner" });
+  s.addText("マネージドルール(優先度10〜40)は、後のページの「Add managed rule groups」の手順で1つずつ追加する。", { x: 0.6, y: 5.9, w: 12.13, h: 0.85, fontSize: 16, bold: true, color: C.background1, margin: 14, valign: "middle", isTextBox: true, objectName: "Own rule banner" });
 }
 
 {
   const s = content("ログの設定と動作確認", "設定方法");
   tcard(s, 0.6, 1.5, 3.9, 4.0, "Card logging", "ログを有効化",
-    "Web ACLの Logging and metrics タブで Enable\n出力先 S3\nバケット名 aws-waf-logs-sample-prd\nauthorizationとcookieをマスク",
+    "Web ACLの Logging and metrics タブで Enable\n出力先 CloudWatch Logs\nロググループ名 aws-waf-logs-shop-prd\nauthorizationとcookieをマスク",
     { tsize: 22, bsize: 18 });
   tcard(s, 4.715, 1.5, 3.9, 4.0, "Card verify", "設定の確認",
-    "Associated AWS resources タブにALBが表示される\nRulesタブに6件が優先度順に並ぶ\nBlockを有効にする前は、ルールのアクションがCountになっている",
+    "Associated AWS resources タブにALBが表示される\nRulesタブに5件が優先度順に並ぶ\nBlockを有効にする前は、ルールのアクションがCountになっている",
     { tsize: 22, bsize: 18 });
   tcard(s, 8.83, 1.5, 3.9, 4.0, "Card test", "動作の確認",
     "テスト環境のALBへ、SQLiを模した文字列をクエリに付けて送る\nCount中はSampled requestsとログに記録される\nBlock化後は403が返る",
@@ -272,17 +284,16 @@ pres.addSection({ title: "ルール設計" });
   ];
   const rows = [
     [H("優先度", "center"), H("ルール"), H("役割"), H("アクション"), H("WCU", "center")],
-    R("1", "許可IP(自前)", "保守拠点のIP setをAllow", "Allow", "1", false),
-    R("2", "レート制限(自前)", "同一IPの過剰アクセス(サンプル 2,000/5分)", "Block", "2", true),
-    R("3", "Amazon IP reputation list", "悪性IPをブロック", "ルール既定", "25", false),
-    R("4", "Core rule set", "汎用的な攻撃(XSSなど)", "ルール既定", "700", true),
-    R("5", "Known bad inputs", "既知の不正入力", "ルール既定", "200", false),
-    R("6", "SQL database", "SQLインジェクション", "ルール既定", "200", true),
+    R("10", "Amazon IP reputation list", "悪性IPをブロック", "ルール既定", "25", false),
+    R("20", "Core rule set", "汎用的な攻撃(XSSなど)", "ルール既定", "700", true),
+    R("30", "Known bad inputs", "既知の不正入力", "ルール既定", "200", false),
+    R("40", "SQL database", "SQLインジェクション", "ルール既定", "200", true),
+    R("50", "レート制限(自前)", "同一IPの過剰アクセス(サンプル 2,000/5分)", "Block", "2", false),
   ];
   s.addTable(rows, { x: 0.6, y: 1.5, w: 12.13, colW: [1.1, 3.9, 4.6, 1.5, 1.03], rowH: 0.55, fontSize: 14, color: C.text1, valign: "middle", border: { type: "solid", pt: 0.5, color: "D0D6DD" }, objectName: "Rule table" });
   card(s, 0.6, 5.65, 12.13, 1.1, "Rule note bg", C.text1);
-  s.addText("番号の小さい順に評価し、AllowまたはBlockに一致した時点で終了。初期は全ルールをCountで運用し、確認後にBlockへ。合計は約1,128 WCU(自前2件は概数)。", { x: 0.6, y: 5.65, w: 12.13, h: 1.1, fontSize: 16, color: C.background1, margin: 14, valign: "middle", isTextBox: true, objectName: "Rule note" });
-  s.addNotes("優先度1の許可IPは、一致するとそれ以降のルールを評価しないため、対象は必要最小限にする。");
+  s.addText("番号の小さい順に評価し、AllowまたはBlockに一致した時点で終了。初期は全ルールをCountで運用し、確認後にBlockへ。合計は約1,127 WCU(自前のレート制限は概数)。", { x: 0.6, y: 5.65, w: 12.13, h: 1.1, fontSize: 16, color: C.background1, margin: 14, valign: "middle", isTextBox: true, objectName: "Rule note" });
+  s.addNotes("02の構成には許可IPのAllowルールを置いていない。置く場合は、一致するとそれ以降のルールを評価しないため、対象は必要最小限にする。");
 }
 
 // ---------------------------------------------------------------- 4 SQLi steps
@@ -396,7 +407,7 @@ pres.addSection({ title: "運用" });
 // ---------------------------------------------------------------- 9 logging
 {
   const s = content("ログ・監視・権限", "運用");
-  tcard(s, 0.6, 1.55, 3.9, 3.3, "Card log", "ログ", "S3 の aws-waf-logs-sample-prd(同一リージョン)に保存。authorizationとcookieはマスク。保管は90日。", { tsize: 20, bsize: 18 });
+  tcard(s, 0.6, 1.55, 3.9, 3.3, "Card log", "ログ", "CloudWatch Logs の aws-waf-logs-shop-prd(同一リージョン)に保存。authorizationとcookieはマスク。保持期間は要決定。", { tsize: 20, bsize: 18 });
   tcard(s, 4.715, 1.55, 3.9, 3.3, "Card metric", "メトリクス", "全ルールのCloudWatchメトリクスを有効化。Sampled requestsで一致した通信を確認する。", { tsize: 20, bsize: 18 });
   tcard(s, 8.83, 1.55, 3.9, 3.3, "Card alarm", "アラーム", "Blockの急増を通知する。しきい値は運用で決める。", { tsize: 20, bsize: 18 });
   tcard(s, 0.6, 5.1, 12.13, 1.6, "Card ops", "権限と構成管理", "設定変更の権限と参照の権限を分ける。Terraformでコード管理する予定で、コードとパラメータシートの値を一致させる。", { tsize: 20, bsize: 18 });
@@ -406,7 +417,7 @@ pres.addSection({ title: "運用" });
 pres.addSection({ title: "容量・制約" });
 {
   const s = content("容量(WCU)と料金", "容量・制約");
-  s.addChart(pres.charts.BAR, [{ name: "WCU", labels: ["Core rule set", "SQL database", "Known bad inputs", "IP reputation list", "レート制限(自前)", "許可IP(自前)"], values: [700, 200, 200, 25, 2, 1] }], {
+  s.addChart(pres.charts.BAR, [{ name: "WCU", labels: ["Core rule set", "SQL database", "Known bad inputs", "IP reputation list", "レート制限(自前)"], values: [700, 200, 200, 25, 2] }], {
     x: 0.6, y: 1.5, w: 7.2, h: 5.0, barDir: "bar", chartColors: [THEME.colors.accent1],
     showTitle: true, title: "ルール別のWCU(自前は概数)", titleFontSize: 14, titleColor: THEME.colors.dk1, titleFontFace: "+mn-lt",
     showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 12, dataLabelColor: THEME.colors.dk1, dataLabelFontFace: "+mn-lt",
@@ -415,7 +426,7 @@ pres.addSection({ title: "容量・制約" });
     valGridLine: { color: "E1E5EA", size: 0.5 }, catGridLine: { style: "none" }, showLegend: false, barGapWidthPct: 50,
     objectName: "WCU chart",
   });
-  stat(s, "約1,128", "本構成の合計WCU(概数)", 8.1, 1.55, 4.63, 1.55, "Stat total");
+  stat(s, "約1,127", "本構成の合計WCU(概数)", 8.1, 1.55, 4.63, 1.55, "Stat total");
   stat(s, "1,500", "基本料金に含まれるWCU。超えると追加料金", 8.1, 3.27, 4.63, 1.55, "Stat included");
   stat(s, "5,000", "1つのWeb ACLの上限", 8.1, 4.99, 4.63, 1.55, "Stat max");
   note(s, "出典: AWS WAF Developer Guide(WCU、Managed rule groups)、AWS WAF Pricing、AWS What's New(2023年4月)。単価は公式の料金ページで確認", 6.65);

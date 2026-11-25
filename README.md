@@ -38,9 +38,9 @@ Kiro・AWS を二重に調べていたため、`01`〜`06`(AWS資料まとめ)�
 | WAF 画面入力サンプル(xlsx) | `07/design` | 名称・ルール・ログ・優先度を `02` に統一。IP set のシートは削除 |
 | 設計書の自動生成ツール | `02`・`03`・`04` の Python、`07/tools/build_waf_design.py` | 対象が別。WAF 設計書は `build_waf_design.py` で再生成できる |
 
-### 統一していないもの(要確認)
+### 未確認・未決の点
 
-- **`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf`(42 枚)** は旧サンプル B の値(`sample-prd-waf-alb`、6 ルール、`10.10.0.0/16`)のままです。スライドは画像素材が無く作り直せないため未更新。値を使う場合は `07/design` を正としてください。
+- **スライド(`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf`、42 枚)も `02` の値に作り直しました(v1.27)**。`07/tools/make_deck.js` と、同梱した Kiro 画面(`tools/kiroimg/`)から再生成しています。
 - `07/terraform` は `terraform validate` を実行していません(terraform が環境に無いため)。
 - OS 更新の配布元ドメインなど、`02` で未決の項目は未決のままです。
 
@@ -191,7 +191,7 @@ Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot c
 
 ## 12. AWS WAF と Kiro 調査(追加資料)
 
-`07_AWS_WAFとKiro調査/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書・Terraform サンプル・生成スクリプト)を取り込み、**設計書・画面入力サンプル・Terraform は `02` の構成に統一**しました(設計書 v1.4)。スライド(v1.26)だけは旧サンプル B の値のままです。
+`07_AWS_WAFとKiro調査/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書・Terraform サンプル・生成スクリプト)を取り込み、**設計書・画面入力サンプル・Terraform・スライドは `02` の構成に統一**しました(設計書 v1.4、スライド v1.27)。
 
 | パス | 内容 |
 |---|---|
@@ -201,7 +201,7 @@ Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot c
 | `07_AWS_WAFとKiro調査/terraform/` | `02` の構成の Terraform(VPC・Network Firewall・エッジルート・SG・DX・WAF。`terraform.tfvars` が `02` のパラメータシートに対応。未検証) |
 | `07_AWS_WAFとKiro調査/tools/` | スライド生成 `make_deck.js`、設計書生成 `build_waf_design.py` |
 
-注意: `make_deck.js` は画像フォルダ(kiroimg)が無いとそのままでは動きません。スライド内の Kiro 画面は Kiro 公式のスクリーンショットなので、公開時は利用条件を確認してください。
+`make_deck.js` は pptxgenjs と pptx スキル(`PPTX_SKILL` で場所を指定)が必要です。画像は `tools/kiroimg/` に同梱(スライド 23〜30 の Kiro 公式スクリーンショット。公開時は利用条件を確認)。
 
 ### WAF 設計の要点(`AWS_WAF_方式設計書_サンプル`)
 

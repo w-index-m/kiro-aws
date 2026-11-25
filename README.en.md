@@ -39,9 +39,9 @@ Kiro and AWS were researched twice, so `01`–`06` (AWS materials) and `07` (WAF
 | WAF console input sample (xlsx) | `07/design` | Names, rules, logging and priorities unified to `02`; IP set sheet removed |
 | Design doc generators | Python in `02`, `03`, `04`; `07/tools/build_waf_design.py` | Different targets. The WAF design doc can be regenerated with `build_waf_design.py` |
 
-### Not unified (needs attention)
+### Open points
 
-- **`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf` (42 slides)** still carries the old Sample B values (`sample-prd-waf-alb`, 6 rules, `10.10.0.0/16`). The deck cannot be rebuilt (image assets are missing), so it is not updated. Treat `07/design` as authoritative.
+- **The deck (`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf`, 42 slides) was also rebuilt on `02`'s values (v1.27)**, regenerated from `07/tools/make_deck.js` and the bundled Kiro screenshots (`tools/kiroimg/`).
 - `07/terraform` has not been through `terraform validate` (terraform is not available in this environment).
 - Items left undecided in `02`, such as the OS-update distribution domain, remain undecided.
 
@@ -194,7 +194,7 @@ Kiro's cloud sessions are disposable isolated environments like those of other v
 
 ## 12. AWS WAF and Kiro research (additional material)
 
-`07_AWS_WAFとKiro調査/` holds the separately prepared "AWS WAF and Kiro research" bundle (slides, design docs, Terraform sample, generator scripts). **The design doc, console input sample and Terraform were unified to `02`'s layout** (design doc v1.4). Only the slides (v1.26) still carry the old Sample B values.
+`07_AWS_WAFとKiro調査/` holds the separately prepared "AWS WAF and Kiro research" bundle (slides, design docs, Terraform sample, generator scripts). **The design doc, console input sample, Terraform and slides were unified to `02`'s layout** (design doc v1.4, slides v1.27).
 
 | Path | Contents |
 |---|---|
@@ -204,7 +204,7 @@ Kiro's cloud sessions are disposable isolated environments like those of other v
 | `07_AWS_WAFとKiro調査/terraform/` | Terraform for `02`'s layout (VPC, Network Firewall, edge routes, SG, DX, WAF; `terraform.tfvars` maps to `02`'s parameter sheet; unvalidated) |
 | `07_AWS_WAFとKiro調査/tools/` | Deck generator `make_deck.js`, design doc generator `build_waf_design.py` |
 
-Note: `make_deck.js` needs its Kiro screenshots, which are now bundled in `tools/kiroimg/` (extracted from the existing pptx), but the theme path still points to the original environment and may fail as-is. The Kiro screens in the slides are official screenshots; check terms of use before publishing.
+Note: `make_deck.js` needs pptxgenjs and the pptx skill (point `PPTX_SKILL` at it). The images are bundled in `tools/kiroimg/` (official Kiro screenshots for slides 23–30; check terms of use before publishing).
 
 ### WAF design highlights (`AWS_WAF_方式設計書_サンプル`)
 
