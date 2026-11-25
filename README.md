@@ -1,5 +1,7 @@
 # kiro-aws — AWS Kiro 資料まとめ(統合版)
 
+**日本語** | [English](README.en.md)
+
 AWS Kiro と AWS 構築まわりの資料を **1 か所に統合** したリポジトリです。
 元は [w-index-m/nirvana-lab](https://github.com/w-index-m/nirvana-lab) の調査記録と、別途作成された 2 つの資料一式(「AWS資料まとめ」「AWS WAFとKiro調査」)で、
 Kiro・AWS を **二重に調べていた** ため、重なりと食い違いを整理してここに束ねています。
