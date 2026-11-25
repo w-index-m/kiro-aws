@@ -1,6 +1,6 @@
 # AWS ALB(Application Load Balancer): 実ヘルスチェック + 実L7トラフィック分散
 
-> 注: 本文中の `tools/`・`docs/` のパスは元リポジトリ(nirvana-lab)内の場所で、このリポジトリには含まれていません。
+> 注: 本文中の `tools/`・`docs/`・`engine/`・`tests/` のパスは、このフォルダ内に元リポジトリ(nirvana-lab)と同じ構成で取り込んであります(`docs/`・`tools/virtual_client.py`・`engine/alb_lb.py`・`engine/mock_http_server.py`・`engine/rules.py`・`tests/test_alb_load_balancer.py`)。ただし `engine/rules.py` と `tests/` はエミュレータ全体(`app.py` など)の一部なので、ここだけでは動きません。動かすには元リポジトリが必要です。
 
 ## これは何か
 
