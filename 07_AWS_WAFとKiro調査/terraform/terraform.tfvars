@@ -25,9 +25,8 @@ subnets = {
   "db-1c"  = { tier = "db", az = "1c", cidr = "10.20.31.0/24" }
 }
 
-flow_log_bucket_arn      = "arn:aws:s3:::shop-prd-flowlog-bucket"       # 要置換
-nfw_log_bucket_name      = "shop-prd-nfw-logs"                          # 要置換
-nfw_alert_log_group_name = "/aws/network-firewall/shop-prd-nfw/alert"   # 要置換
+flow_log_bucket_arn = "arn:aws:s3:::shop-prd-flowlog-bucket" # 要置換
+nfw_log_bucket_name = "shop-prd-nfw-logs"                    # 要置換
 
 dx_gateway_asn = 64512
 

@@ -35,14 +35,14 @@ Kiro and AWS were researched twice, so `01`–`06` (AWS materials) and `07` (WAF
 | VPC / DX design | `02` | `07`'s separate sample (VPC `10.10.0.0/16`) design doc and parameter sheet were **deleted** (kept in Git history) |
 | WAF design | `07/design` (detail) + `02` (values) | Values unified to `02`: Web ACL `shop-prd-webacl`, 5 rules (priority 10–50, about 1,127 WCU), logs to CloudWatch Logs `aws-waf-logs-shop-prd`; allow-IP rule and IP set removed |
 | Network Firewall | `02`, `03` | `07`'s WAF design now also says "adopted" (IGW → Firewall → ALB path) |
-| Terraform | `07/terraform` | Rebuilt on `02`'s layout (`shop-prd-*`, `10.20.0.0/16`, firewall subnets, edge routes, Network Firewall, DX VLAN 101/102 and ASN 65010, WAF). `validate`/`plan` not run |
+| Terraform | `07/terraform` | Rebuilt on `02`'s layout (`shop-prd-*`, `10.20.0.0/16`, firewall subnets, edge routes, Network Firewall, DX VLAN 101/102 and ASN 65010, WAF). `validate` passed; offline `plan` shows 80 resources; not applied to real AWS |
 | WAF console input sample (xlsx) | `07/design` | Names, rules, logging and priorities unified to `02`; IP set sheet removed |
 | Design doc generators | Python in `02`, `03`, `04`; `07/tools/build_waf_design.py` | Different targets. The WAF design doc can be regenerated with `build_waf_design.py` |
 
 ### Open points
 
 - **The deck (`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf`, 42 slides) was also rebuilt on `02`'s values (v1.27)**, regenerated from `07/tools/make_deck.js` and the bundled Kiro screenshots (`tools/kiroimg/`).
-- `07/terraform` has not been through `terraform validate` (terraform is not available in this environment).
+- `07/terraform` passes `terraform validate` (Terraform 1.9.8, AWS provider 5.82.2) and an offline `plan` with dummy credentials shows 80 resources; it has not been applied to real AWS. The check also revealed that Network Firewall cannot send ALERT logs to both S3 and CloudWatch Logs in one logging configuration (a point to revisit in `02`; the Terraform sends ALERT and FLOW to S3).
 - Items left undecided in `02`, such as the OS-update distribution domain, remain undecided.
 
 ## Notes
@@ -201,7 +201,7 @@ Kiro's cloud sessions are disposable isolated environments like those of other v
 | `07_AWS_WAFとKiro調査/docs/AWS_WAFとKiro調査.pptx` / `.pdf` | Research slides (42) |
 | `07_AWS_WAFとKiro調査/design/AWS_WAF_方式設計書_サンプル.xlsx` / `.md` | WAF architecture design (v1.3) |
 | `07_AWS_WAFとKiro調査/design/AWS_WAF_画面一覧_入力サンプル.xlsx` | Input sample for the WAF console screens |
-| `07_AWS_WAFとKiro調査/terraform/` | Terraform for `02`'s layout (VPC, Network Firewall, edge routes, SG, DX, WAF; `terraform.tfvars` maps to `02`'s parameter sheet; unvalidated) |
+| `07_AWS_WAFとKiro調査/terraform/` | Terraform for `02`'s layout (VPC, Network Firewall, edge routes, SG, DX, WAF; `terraform.tfvars` maps to `02`'s parameter sheet) |
 | `07_AWS_WAFとKiro調査/tools/` | Deck generator `make_deck.js`, design doc generator `build_waf_design.py` |
 
 Note: `make_deck.js` needs pptxgenjs and the pptx skill (point `PPTX_SKILL` at it). The images are bundled in `tools/kiroimg/` (official Kiro screenshots for slides 23–30; check terms of use before publishing).

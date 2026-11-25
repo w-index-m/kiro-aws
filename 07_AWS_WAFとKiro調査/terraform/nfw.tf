@@ -114,7 +114,9 @@ resource "aws_networkfirewall_firewall" "this" {
   tags = { Name = "${local.prefix}-nfw" }
 }
 
-# ログ: ALERT と FLOW を S3 へ、ALERT は CloudWatch Logs にも(02 のとおり)
+# ログ: ALERT と FLOW を S3 へ。
+# 注: 02 には「ALERT は CloudWatch Logs にも」とあるが、Network Firewall はログの種類ごとに送り先を 1 つしか持てない
+#     (plan で "duplicate log_type" エラー)。ALERT を CloudWatch Logs へも送るなら、S3 から転送するなど別の仕組みが要る。
 resource "aws_networkfirewall_logging_configuration" "this" {
   firewall_arn = aws_networkfirewall_firewall.this.arn
 
@@ -133,13 +135,6 @@ resource "aws_networkfirewall_logging_configuration" "this" {
       log_destination = {
         bucketName = var.nfw_log_bucket_name
         prefix     = "flow"
-      }
-    }
-    log_destination_config {
-      log_type             = "ALERT"
-      log_destination_type = "CloudWatchLogs"
-      log_destination = {
-        logGroup = var.nfw_alert_log_group_name
       }
     }
   }

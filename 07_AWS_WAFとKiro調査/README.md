@@ -6,7 +6,7 @@ AWS WAFの方式設計(サンプル)と、Kiroの画面・料金・使い方を�
 - `docs/AWS_WAFとKiro調査.pptx` ... 調査スライド(42枚、v1.27。02 の値に統一)。PDF版も同梱
 - `design/AWS_WAF_方式設計書_サンプル.xlsx / .md` ... WAFの方式設計書(サンプル)
 - `design/AWS_WAF_画面一覧_入力サンプル.xlsx` ... WAF設定画面の入力サンプル
-- `terraform/` ... ネットワーク・Network Firewall・WAFのTerraformサンプル(02_AWSネットワーク設計書サンプルの構成。未検証)
+- `terraform/` ... ネットワーク・Network Firewall・WAFのTerraformサンプル(02_AWSネットワーク設計書サンプルの構成)
 - `tools/` ... スライド(make_deck.js)と方式設計書(build_waf_design.py)の生成スクリプト
 
 ## 注意

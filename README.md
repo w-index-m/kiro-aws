@@ -34,14 +34,14 @@ Kiro・AWS を二重に調べていたため、`01`〜`06`(AWS資料まとめ)�
 | VPC・DX の方式設計 | `02` | `07` にあった別サンプル(VPC `10.10.0.0/16`)の方式設計書・パラメータシートは**削除**(Git 履歴に残る) |
 | WAF の設計 | `07/design`(詳細)+ `02`(値) | 値を `02` に統一: Web ACL `shop-prd-webacl`、ルール 5 本(優先度 10〜50、約 1,127 WCU)、ログは CloudWatch Logs `aws-waf-logs-shop-prd`、許可 IP ルール・IP set は廃止 |
 | Network Firewall | `02`・`03` | `07` の WAF 設計書も「採用」に変更(IGW → Firewall → ALB の経路) |
-| Terraform | `07/terraform` | `02` の構成に作り直し(`shop-prd-*`、`10.20.0.0/16`、firewall サブネット、エッジルート、Network Firewall、DX VLAN 101/102・ASN 65010、WAF)。`validate`/`plan` は未実行 |
+| Terraform | `07/terraform` | `02` の構成に作り直し(`shop-prd-*`、`10.20.0.0/16`、firewall サブネット、エッジルート、Network Firewall、DX VLAN 101/102・ASN 65010、WAF)。`validate` 成功・オフライン `plan` で 80 リソース(本物の AWS では未適用) |
 | WAF 画面入力サンプル(xlsx) | `07/design` | 名称・ルール・ログ・優先度を `02` に統一。IP set のシートは削除 |
 | 設計書の自動生成ツール | `02`・`03`・`04` の Python、`07/tools/build_waf_design.py` | 対象が別。WAF 設計書は `build_waf_design.py` で再生成できる |
 
 ### 未確認・未決の点
 
 - **スライド(`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf`、42 枚)も `02` の値に作り直しました(v1.27)**。`07/tools/make_deck.js` と、同梱した Kiro 画面(`tools/kiroimg/`)から再生成しています。
-- `07/terraform` は `terraform validate` を実行していません(terraform が環境に無いため)。
+- `07/terraform` は Terraform 1.9.8 + AWS provider 5.82.2 で `validate` 成功、ダミー認証情報のオフライン `plan` で 80 リソースを確認(本物の AWS では未適用)。この確認で、Network Firewall は「ALERT を S3 と CloudWatch Logs の両方へ」を 1 つのログ設定では作れないと分かった(`02` の記述の要見直し点。Terraform は ALERT・FLOW とも S3)。
 - OS 更新の配布元ドメインなど、`02` で未決の項目は未決のままです。
 
 ## 注意

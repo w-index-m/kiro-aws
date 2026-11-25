@@ -69,11 +69,6 @@ variable "nfw_log_bucket_name" {
   type        = string
 }
 
-variable "nfw_alert_log_group_name" {
-  description = "Network Firewall の ALERT ログを送る CloudWatch Logs のロググループ名(既存)"
-  type        = string
-}
-
 variable "egress_allowed_domains" {
   description = "アプリから外へ出る通信で許可するドメイン(TLS SNI / HTTP Host)。OS更新の配布元は要決定"
   type        = list(string)
