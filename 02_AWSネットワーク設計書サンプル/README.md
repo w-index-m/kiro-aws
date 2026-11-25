@@ -1,15 +1,15 @@
 # AWS ネットワーク設計書のサンプル(VPC・Direct Connect・ALB・NAT・WAF・Network Firewall)
 
-エンジニアが書く「基本設計書」と「パラメータシート」のサンプルです(Kiro の資料 `docs/ai-driven-dev-kiro.pptx` の 16・17 枚目。Claude がこのラボで作った見本で、Kiro が実際に出すものとは形が違うことがあります)。会社名・ドメイン・IP・ASN はすべて架空(文書用の範囲)で、
+エンジニアが書く「基本設計書」と「パラメータシート」のサンプルです(Kiro の資料 `01_Kiro資料/ai-driven-dev-kiro.pptx` の 16・17 枚目。Claude がこのラボで作った見本で、Kiro が実際に出すものとは形が違うことがあります)。会社名・ドメイン・IP・ASN はすべて架空(文書用の範囲)で、
 本物の AWS には入れていません。
 
 | ファイル | 中身 |
 |---|---|
-| `design-samples/aws-network/basic-design.md` | 基本設計書(目的と範囲・前提・構成図・通信の流れ・各サービスの設計・可用性・運用監視・試験・未決事項・改版履歴) |
-| `design-samples/aws-network/parameter-sheet.md` | パラメータシート(Markdown) |
-| `design-samples/aws-network/parameter-sheet.xlsx` | パラメータシート(Excel、11 シート、印刷は横向き・幅 1 ページ) |
-| `design-samples/aws-network/check.md` | 値の矛盾チェックの結果と、ルートの行き・戻りの計算 |
-| `design-samples/aws-network/diagram.png` | 構成図(設計書の Mermaid を描いたもの) |
+| `出力/basic-design.md` | 基本設計書(目的と範囲・前提・構成図・通信の流れ・各サービスの設計・可用性・運用監視・試験・未決事項・改版履歴) |
+| `出力/parameter-sheet.md` | パラメータシート(Markdown) |
+| `出力/parameter-sheet.xlsx` | パラメータシート(Excel、11 シート、印刷は横向き・幅 1 ページ) |
+| `出力/check.md` | 値の矛盾チェックの結果と、ルートの行き・戻りの計算 |
+| `出力/diagram.png` | 構成図(設計書の Mermaid を描いたもの) |
 
 ![構成図](出力/diagram.png)
 
@@ -26,11 +26,11 @@
 
 ## 値を 1 か所に置き、矛盾を機械的に確かめる
 
-設計書とパラメータシートは、どちらも `tools/design_docs/aws_network_sample.py` の `DESIGN` から作ります。
+設計書とパラメータシートは、どちらも `道具/aws_network_sample.py` の `DESIGN` から作ります。
 資料で「作るより確かめる方が大変」と書いたとおり、ルートテーブルの組み合わせは人の目では抜けやすいので、次の点を計算で確かめます。
 
 ```
-$ python3 tools/design_docs/aws_network_sample.py --out docs/design-samples/aws-network
+$ python3 道具/aws_network_sample.py --out 出力
 OK  サブネットが VPC の中にある
 OK  サブネットが重ならない
 OK  オンプレの帯と VPC が重ならない
@@ -43,7 +43,7 @@ OK  WAF の WCU の合計 1127 が 1500 以内(各値は要確認)
 OK  DX が 2 つのロケーションに分かれている
 OK  DX の主系と副系でコミュニティが違う(7224:7300 / 7224:7100)
 OK  Firewall の HOME_NET に VPC とオンプレが入る
-Excel: あり / 出力: docs/design-samples/aws-network
+Excel: あり / 出力: 出力
 ```
 
 **チェックで実際に見つかった抜け(2 件)**:
