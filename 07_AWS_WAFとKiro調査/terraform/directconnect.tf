@@ -1,19 +1,10 @@
 # 物理のDX専用接続(aws_dx_connection)の申込み・開通は、LOA-CFA取得とキャリア作業を伴うため
 # 本コードの対象外とし、既存接続IDを var.dx_vifs[*].connection_id で受け取る。
-
-# ---------------------------------------------------------------- VGW
-resource "aws_vpn_gateway" "this" {
-  tags = { Name = "${local.prefix}-vgw" }
-}
-
-resource "aws_vpn_gateway_attachment" "this" {
-  vpc_id         = aws_vpc.this.id
-  vpn_gateway_id = aws_vpn_gateway.this.id
-}
+# VGW は routing.tf で作成・アタッチ。
 
 # ---------------------------------------------------------------- Direct Connect Gateway
 resource "aws_dx_gateway" "this" {
-  name            = "${local.prefix}-dxgw"
+  name            = "shop-dxgw"
   amazon_side_asn = var.dx_gateway_asn
 }
 
@@ -26,13 +17,13 @@ resource "aws_dx_gateway_association" "this" {
   depends_on = [aws_vpn_gateway_attachment.this]
 }
 
-# ---------------------------------------------------------------- Private VIF
-# BFD: AWS側はVIFでBFDに応答する。オンプレ側ルータでBFDを有効化すること。
-# Local Pref(接続A優先など)はオンプレ側ルータで設定する。
+# ---------------------------------------------------------------- Private VIF(接続 a=主系、b=副系)
+# AWS → オンプレの向きの優先は、オンプレから広告する BGP コミュニティで決める(主系 7224:7300 / 副系 7224:7100)。
+# これはオンプレ側ルータの設定で、本コードでは行わない。
 resource "aws_dx_private_virtual_interface" "this" {
   for_each = var.dx_vifs
 
-  name             = "${local.prefix}-vif-${each.key}"
+  name             = "shop-vif-${each.key}"
   connection_id    = each.value.connection_id
   dx_gateway_id    = aws_dx_gateway.this.id
   vlan             = each.value.vlan
@@ -43,5 +34,5 @@ resource "aws_dx_private_virtual_interface" "this" {
   bgp_auth_key     = lookup(var.bgp_auth_keys, each.key, null)
   mtu              = each.value.mtu
 
-  tags = { Name = "${local.prefix}-vif-${each.key}" }
+  tags = { Name = "shop-vif-${each.key}" }
 }

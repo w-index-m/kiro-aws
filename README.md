@@ -18,32 +18,31 @@ Kiro・AWS を **二重に調べていた** ため、重なりと食い違いを
 | `04_ALB設計書の自動作成/` | ALB の describe から設計書・パラメータシートを作る | `出力/basic-design.md` |
 | `05_DirectConnect_BGP/` | DX のオンプレ側 BGP 設計をラボで先に検証 | `README.md` |
 | `06_ラボのALB模擬/` | aws-cli 構文で動く模擬 ALB | `README.md` |
-| `07_AWS_WAFとKiro調査/` | WAF の方式設計・VPC/DX 方式設計(**サンプル B**、VPC `10.10.0.0/16`)・Terraform サンプル・Kiro の画面/料金調査スライド(42 枚) | `docs/AWS_WAFとKiro調査.pdf`、`design/` |
+| `07_AWS_WAFとKiro調査/` | WAF の方式設計(02 の値に統一)・Terraform サンプル(02 の構成)・Kiro の画面/料金調査スライド(42 枚) | `docs/AWS_WAFとKiro調査.pdf`、`design/` |
 | `08_補助資料/` | AI エージェントのサンドボックス比較 | `ai-agent-sandboxes.md` |
 
 下の「1〜11 章」は Kiro と AWS 構築の要点まとめ(主に `01`)、「12 章」は `07` の要点です。
 
-## 二重調査の整理(重なり・食い違い・使い分け)
+## 二重調査の整理(02 の構成に統一済み)
 
-| テーマ | `01`〜`06`(AWS資料まとめ) | `07`(WAFとKiro調査) | 扱い |
-|---|---|---|---|
-| Kiro の使い方・AWS 構築 | **主資料**(34 枚 + 文章版、最新) | 概要・料金・画面のみ | 手順・決まりごとは `01` を正とする |
-| Kiro の料金・プラン・画面・BYOK・他エディタ連携 | なし | **主資料**(スライド 19〜42) | `07` を正とする |
-| VPC・DX の方式設計サンプル | `02`(`10.20.0.0/16`、Network Firewall で入出を検査、DX 2 ロケーション、BGP コミュニティで主系選択) | `07/design`(`10.10.0.0/16`、Network Firewall 未採用、VLAN 100/101、Local Pref で接続 A 優先) | **別サンプル。値は互換性なし**(下記)。どちらか 1 つを正にして使う |
-| WAF 設計 | `02` に簡易版(マネージド 4 + 回数制限) | **詳細版**(6 ルール・WCU・ログ・試験観点・セキュリティ機能比較) | WAF の詳細は `07` を正とする |
-| Network Firewall | `02`(設計に組込み)・`03`(既存 FW からの移行) | `07` は比較表のみ(未採用) | `02`・`03` を正とする |
-| Terraform | `03` の `main.tf`(Network Firewall のみ) | `07/terraform`(VPC・DX・NACL/SG) | 補完関係。両方使える |
-| 設計書の自動生成ツール | `02`・`03`・`04` の Python | `07/tools/build_waf_design.py` | 対象が別。重複なし |
-| `ai-driven-aws.md` | 新版(`01`:「AWS を変える方法: 直接か IaC か」を追記、スライド番号が 1 つずれる) | — | 旧版は置き換え済み(Git 履歴に残る) |
+Kiro・AWS を二重に調べていたため、`01`〜`06`(AWS資料まとめ)と `07`(WAFとKiro調査)に重なりと食い違いがありました。
+**`02` の構成(サンプル A: VPC `10.20.0.0/16`、`shop-prd-*`、Network Firewall 採用)を基準に統一**しました。
 
-### 食い違い(要判断)
+| テーマ | 正とする場所 | 統一の内容 |
+|---|---|---|
+| Kiro の使い方・AWS 構築 | `01`(34 枚 + 文章版) | `07` のスライドは Kiro の料金・画面・BYOK など `01` に無い部分を補う |
+| VPC・DX の方式設計 | `02` | `07` にあった別サンプル(VPC `10.10.0.0/16`)の方式設計書・パラメータシートは**削除**(Git 履歴に残る) |
+| WAF の設計 | `07/design`(詳細)+ `02`(値) | 値を `02` に統一: Web ACL `shop-prd-webacl`、ルール 5 本(優先度 10〜50、約 1,127 WCU)、ログは CloudWatch Logs `aws-waf-logs-shop-prd`、許可 IP ルール・IP set は廃止 |
+| Network Firewall | `02`・`03` | `07` の WAF 設計書も「採用」に変更(IGW → Firewall → ALB の経路) |
+| Terraform | `07/terraform` | `02` の構成に作り直し(`shop-prd-*`、`10.20.0.0/16`、firewall サブネット、エッジルート、Network Firewall、DX VLAN 101/102・ASN 65010、WAF)。`validate`/`plan` は未実行 |
+| WAF 画面入力サンプル(xlsx) | `07/design` | 名称・ルール・ログ・優先度を `02` に統一。IP set のシートは削除 |
+| 設計書の自動生成ツール | `02`・`03`・`04` の Python、`07/tools/build_waf_design.py` | 対象が別。WAF 設計書は `build_waf_design.py` で再生成できる |
 
-1. **VPC CIDR が違う**: サンプル A `10.20.0.0/16` / サンプル B `10.10.0.0/16`。サブネット・ルート・NACL・Terraform の `terraform.tfvars` まで値が連鎖するので、混ぜて使わない。
-2. **WAF のルール数が違う**: A は 4 マネージド + 回数制限、B は許可 IP + 回数制限 + 4 マネージドの 6 ルール(約 1,128 WCU)。回数制限のしきい値(2,000 回/5 分)は共通。
-3. **Network Firewall の有無**: A は IGW/VGW のエッジルートで常時検査する構成、B は未採用(WAF + NACL/SG のみ)。採用するなら B のルート設計を改版する必要がある。
-4. **命名**: A は `shop-prd-*`、B は `sample-prd-*`。
+### 統一していないもの(要確認)
 
-→ 今後の方針案: サンプル A(`02`)を基準にし、B の WAF 詳細・Terraform の値を A に合わせて作り直す。または B を独立した「WAF 単体のサンプル」として残す。どちらにするかは未決。
+- **`07/docs/AWS_WAFとKiro調査.pptx` / `.pdf`(42 枚)** は旧サンプル B の値(`sample-prd-waf-alb`、6 ルール、`10.10.0.0/16`)のままです。スライドは画像素材が無く作り直せないため未更新。値を使う場合は `07/design` を正としてください。
+- `07/terraform` は `terraform validate` を実行していません(terraform が環境に無いため)。
+- OS 更新の配布元ドメインなど、`02` で未決の項目は未決のままです。
 
 ## 注意
 
@@ -151,6 +150,17 @@ ALB の HTTPS は ACM 証明書が必要(同一リージョン)。順番は VPC 
 - **チャットで firewall も変えられるか** → API 経由で可能(SG・NACL・Network Firewall・WAF)。直接変更は検証環境まで、本番は「IaC を直させる → plan → PR → CI → 承認 → CI/CD」
 - **反映方法** → IaC の道具(`terraform apply` / 変更セット / `cdk deploy`)を本番では CI/CD が実行。aws-cli は作業前後の `describe-*` 確認用
 - **AWS の状態を見られるか** → 読み取り権限で可(describe 系、CloudWatch、CloudTrail、Config、`terraform plan -refresh-only`、ドリフト検出)。秘密(Lambda 環境変数など)は読ませない
+- **Kiro で AWS を変える方法(種類別)**:
+
+| 種類 | 方法 | PR → CI/CD → 人の承認に乗るか |
+|---|---|---|
+| 直接変える | AWS MCP サーバー経由の API / Cloud Control API / SDK(boto3 など)/ aws-cli | 乗らない(実行したその場で変わる)。本番は読み取り(describe)だけにする |
+| IaC | Terraform(OpenTofu)/ CloudFormation / AWS CDK / AWS SAM / Pulumi | 乗る。反映は CI/CD が `terraform apply` / 変更セットの実行 / `cdk deploy` で行う |
+| サーバーの中 | Systems Manager(Run Command・Automation・State Manager)/ Ansible | OS・ミドルウェアの設定向け |
+
+  「aws-cli で IaC を書く」ではない。IaC はコードで、aws-cli は作業前後の確認(describe)に使う(CloudFormation の `aws cloudformation deploy` や変更セットの実行だけは aws-cli が反映の命令)。ブラウザ自動操作でのコンソール操作は記録が残りにくく壊れやすいので避ける。
+  正しい流れ: Kiro が IaC を書き plan/変更セットを出して PR → CI が検査 → 人が差分を読んで承認 → CI/CD が反映 → aws-cli の describe で確認
+- **FIC・富士通(MLC)など対向側がキャリアのサービスの場合**: 対向を先につなぐ必要はなく、順番は自由(通信が流れるのはすべてそろってから)。AWS 側の DXGW・VGW/TGW・関連付けは先に作れる。BGP は L3 型ならキャリア、L2 型なら自分の拠点のルーターが張る。FIC は「Port から AWS」(L2 型に近い)と「FIC-Router から AWS」(L3 型に近い)の 2 通り。「MLC」という名前のサービスは確認できず、富士通は「クラウドコネクト for AWS Direct Connect」が見つかった。BGP の担当・冗長の範囲は各社の資料で要確認
 - **別の AI による確認** → 4 段: 機械検査(validate/tflint/checkov/cfn-lint/cfn-guard)→ 別 AI で要件と plan 差分を突き合わせ → 人の承認 → 反映後の実通信確認(Reachability Analyzer・Network Access Analyzer)。AI は承認の代わりではなく確認を 1 段増やすもの
 
 ## 9. 既存 firewall → AWS Network Firewall
@@ -181,29 +191,27 @@ Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot c
 
 ## 12. AWS WAF と Kiro 調査(追加資料)
 
-`07_AWS_WAFとKiro調査/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書サンプル・Terraform サンプル・生成スクリプト)を取り込んでいます。
-内容はすべてサンプルで、2026-11-25 時点(スライド v1.26)の整理です。
+`07_AWS_WAFとKiro調査/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書・Terraform サンプル・生成スクリプト)を取り込み、**設計書・画面入力サンプル・Terraform は `02` の構成に統一**しました(設計書 v1.4)。スライド(v1.26)だけは旧サンプル B の値のままです。
 
 | パス | 内容 |
 |---|---|
 | `07_AWS_WAFとKiro調査/docs/AWS_WAFとKiro調査.pptx` / `.pdf` | 調査スライド(42 枚) |
 | `07_AWS_WAFとKiro調査/design/AWS_WAF_方式設計書_サンプル.xlsx` / `.md` | WAF 方式設計書(v1.3) |
 | `07_AWS_WAFとKiro調査/design/AWS_WAF_画面一覧_入力サンプル.xlsx` | WAF 設定画面の入力サンプル |
-| `07_AWS_WAFとKiro調査/design/AWS_VPC_DX_方式設計書_パラメータシート_サンプル.xlsx` / `.md` | VPC / Direct Connect 方式設計 |
-| `07_AWS_WAFとKiro調査/terraform/` | VPC・DX・NACL/SG の Terraform サンプル(`terraform.tfvars` がパラメータシートに対応) |
+| `07_AWS_WAFとKiro調査/terraform/` | `02` の構成の Terraform(VPC・Network Firewall・エッジルート・SG・DX・WAF。`terraform.tfvars` が `02` のパラメータシートに対応。未検証) |
 | `07_AWS_WAFとKiro調査/tools/` | スライド生成 `make_deck.js`、設計書生成 `build_waf_design.py` |
 
 注意: `make_deck.js` は画像フォルダ(kiroimg)が無いとそのままでは動きません。スライド内の Kiro 画面は Kiro 公式のスクリーンショットなので、公開時は利用条件を確認してください。
 
 ### WAF 設計の要点(`AWS_WAF_方式設計書_サンプル`)
 
-- **構成**: Internet → IGW → ALB(+ リージョナル Web ACL `sample-prd-waf-alb`)→ App → DB。既定アクションは Allow(ブロックリスト方式)
-- **ルール評価順**: 1 許可 IP(Allow)→ 2 レート制限(2,000 回/5 分で Block)→ 3 IP reputation → 4 Core rule set → 5 Known bad inputs → 6 SQL database
+- **構成**: Internet → IGW → Network Firewall → ALB(+ リージョナル Web ACL `shop-prd-webacl`)→ App → DB。既定アクションは Allow(ブロックリスト方式)
+- **ルール評価順**: 10 IP reputation → 20 Core rule set → 30 Known bad inputs → 40 SQL database → 50 レート制限(2,000 回/5 分で Block)。許可 IP ルールは置かない
 - **導入**: 全ルールを Count で開始し、Sampled requests とログで誤検知を確認してから Block へ。ALB では本文検査が先頭 8KB 固定のため、アップロード系パスは Core rule set の `SizeRestrictions_BODY` から範囲を限定して除外
-- **WCU・料金**: 合計 約 1,128 WCU(上限 5,000、基本料金に含まれるのは 1,500 まで)。有料マネージドルールは追加時に自動購読になる
-- **ログ**: S3 の `aws-waf-logs-` で始まる名前へ出力、authorization / cookie をマスク、保管 90 日
+- **WCU・料金**: 合計 約 1,127 WCU(上限 5,000、基本料金に含まれるのは 1,500 まで)。有料マネージドルールは追加時に自動購読になる
+- **ログ**: CloudWatch Logs の `aws-waf-logs-shop-prd` へ出力、authorization / cookie をマスク、保持期間は要決定
 - **関連付け可能**: CloudFront・ALB・API Gateway(REST)・AppSync・App Runner・Verified Access など。NLB・GWLB は不可
-- **他機能との分担**: NACL/SG = L3/L4、WAF = L7、Network Firewall = L3〜L7(未採用)、Shield = DDoS、Firewall Manager = 複数アカウント一元管理
+- **他機能との分担**: NACL/SG = L3/L4、WAF = L7、Network Firewall = L3〜L7(採用)、Shield = DDoS、Firewall Manager = 複数アカウント一元管理
 - **マネージドルールの更新**: 既定の版は新版公開で自動では変わらず、切替の 1 週間前と当日に SNS 通知。IP reputation は版が無く頻繁に更新され通知対象外
 
 ### Kiro に関する追加情報(スライド 19〜42)

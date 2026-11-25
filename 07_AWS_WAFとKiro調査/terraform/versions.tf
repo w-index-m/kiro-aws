@@ -10,10 +10,10 @@ terraform {
 
   # 本番運用ではリモートステートを推奨(例)
   # backend "s3" {
-  #   bucket         = "sample-tfstate-bucket"
+  #   bucket         = "shop-tfstate-bucket"
   #   key            = "network/terraform.tfstate"
   #   region         = "ap-northeast-1"
-  #   dynamodb_table = "sample-tfstate-lock"
+  #   dynamodb_table = "shop-tfstate-lock"
   #   encrypt        = true
   # }
 }

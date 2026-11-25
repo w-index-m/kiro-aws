@@ -8,11 +8,16 @@ output "subnet_ids" {
 
 output "nat_gateway_public_ips" {
   description = "NATGWのEIP(外部サービス側の許可リスト登録用)"
-  value       = { for az, e in aws_eip.natgw : az => e.public_ip }
+  value       = { for az, e in aws_eip.nat : az => e.public_ip }
 }
 
-output "route_table_ids" {
-  value = local.route_table_ids
+output "nfw_endpoint_ids" {
+  description = "AZごとの Network Firewall エンドポイント"
+  value       = local.nfw_endpoint
+}
+
+output "web_acl_arn" {
+  value = aws_wafv2_web_acl.this.arn
 }
 
 output "dx_gateway_id" {

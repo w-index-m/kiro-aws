@@ -1,18 +1,22 @@
-# AWSネットワーク基盤 Terraform(サンプル)
+# AWS ネットワーク基盤 Terraform(サンプル)
 
-方式設計書・パラメータシート(サンプル)と同じ構成を作成します。1ディレクトリ構成です。
+`02_AWSネットワーク設計書サンプル`(サンプル A)のパラメータシートと **同じ構成・同じ値**(`shop-prd-*`、VPC `10.20.0.0/16`)を作る Terraform です。
+**まだ `terraform validate` / `plan` は実行していません**(この環境に terraform が無いため)。使う前に必ず検証してください。
 
 | ファイル | 内容 |
 |---|---|
-| versions.tf | Terraform/Providerバージョン、defaultタグ |
-| variables.tf / terraform.tfvars | 入力変数 / サンプル値(パラメータシートに対応) |
-| vpc.tf | VPC、フローログ、サブネット、IGW、NATGW、EIP |
-| routing.tf | ルートテーブル、関連付け、VGW経路伝播 |
-| security.tf | NACL、セキュリティグループ |
-| directconnect.tf | VGW、DXGW、DXGW関連付け、Private VIF |
+| versions.tf | Terraform/Provider バージョン、default タグ |
+| variables.tf / terraform.tfvars | 入力変数 / サンプル値(02 のパラメータシートに対応) |
+| vpc.tf | VPC、フローログ、サブネット(public / firewall / app / db)、IGW、NAT GW、EIP |
+| nfw.tf | Network Firewall(ルールグループ 2 つ・ポリシー・ファイアウォール・ログ) |
+| routing.tf | VGW、IGW / VGW のエッジルートテーブル、AZ ごとのルートテーブル(行き帰りを同じ AZ の Firewall に通す) |
+| security.tf | セキュリティグループ(ALB / アプリ / DB) |
+| directconnect.tf | DX ゲートウェイ、DXGW 関連付け、Private VIF(2 本) |
+| waf.tf | WAF の Web ACL(マネージド 4 + 回数制限)、ログ(CloudWatch Logs)、ALB への関連付け(任意) |
 | outputs.tf | 出力値 |
 
 ## 使い方
+
 ```bash
 terraform init
 terraform validate
@@ -21,9 +25,13 @@ terraform apply -var-file=terraform.tfvars
 ```
 
 ## 事前準備・注意
-- `flow_log_bucket_arn` のS3バケットは事前に作成しておく(バケットポリシーでログ配信を許可)。
-- DX専用接続は事前に開通済みであること。`terraform.tfvars` の `dxcon-xxxxxxxx` を実IDに置換。
-- BGP認証キーは tfvars に書かず `TF_VAR_bgp_auth_keys` 等で渡す。
-- BFD有効化とLocal Pref(接続A優先)はオンプレ側ルータの設定。
-- NACL(db)のApp層送信元は `cidrsubnet(var.vpc_cidr, 7, 5)`(vpc_cidr=10.10.0.0/16 のとき 10.10.10.0/23)で算出している。CIDRを変更する場合は見直すこと。
-- サンプル値(CIDR/ASN/VLAN/タグ)は実案件の値に置換すること。
+
+- 先に作っておくもの: VPC フローログ用 S3(`flow_log_bucket_arn`)、Network Firewall のログ用 S3(`nfw_log_bucket_name`)と ALERT 用ロググループ(`nfw_alert_log_group_name`)。
+- DX 専用接続は事前に開通済みであること。`terraform.tfvars` の `dxcon-xxxxxxxx` を実 ID に置換。
+- BGP 認証キーは tfvars に書かず `TF_VAR_bgp_auth_keys` 等で渡す。
+- 主系・副系の優先(BGP コミュニティ 7224:7300 / 7100)はオンプレ側ルータの設定で、このコードでは行わない。
+- ALB は対象外。作った ALB の ARN を `alb_arn` に渡すと Web ACL を関連付ける。
+- WAF のマネージドルールは `waf_managed_rules_count_only = true`(Count)で始め、誤検知を確認してから `false`(Block)にする。
+- 02 の設計にネットワーク ACL は無いので作っていない(既定のまま)。
+- 「OS 更新の配布元」のドメインは 02 でも未決。`egress_allowed_domains` に追加が必要。
+- 以前の版(サンプル B: `sample-prd-*`、VPC `10.10.0.0/16`、Network Firewall なし、NACL あり)は Git の履歴に残っている。

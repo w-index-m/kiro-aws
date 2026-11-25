@@ -1,12 +1,11 @@
 locals {
   prefix = "${var.system}-${var.env}"
 
-  public_subnets = { for k, v in var.subnets : k => v if v.tier == "public" }
-
-  # AZ短縮名 => そのAZのPublicサブネットキー(NATGW配置用)
-  nat_az_to_subnet = { for k, v in local.public_subnets : v.az => k }
-
-  app_azs = toset([for v in var.subnets : v.az if v.tier == "app"])
+  # tier => { AZ短縮名 => サブネットキー }
+  subnet_by_tier_az = {
+    for tier in ["public", "firewall", "app", "db"] :
+    tier => { for k, v in var.subnets : v.az => k if v.tier == tier }
+  }
 }
 
 # ---------------------------------------------------------------- VPC
@@ -38,7 +37,7 @@ resource "aws_subnet" "this" {
   availability_zone       = var.azs[each.value.az]
   map_public_ip_on_launch = false
 
-  tags = { Name = "${local.prefix}-sub-${each.key}" }
+  tags = { Name = "${local.prefix}-${each.key}" } # 例: shop-prd-pub-1a
 }
 
 # ---------------------------------------------------------------- IGW
@@ -48,25 +47,25 @@ resource "aws_internet_gateway" "this" {
   tags = { Name = "${local.prefix}-igw" }
 }
 
-# ---------------------------------------------------------------- NAT Gateway (AZごと)
-resource "aws_eip" "natgw" {
-  for_each = local.nat_az_to_subnet
+# ---------------------------------------------------------------- NAT Gateway (AZごと、publicサブネットに配置)
+resource "aws_eip" "nat" {
+  for_each = local.subnet_by_tier_az["public"]
 
   domain = "vpc"
 
-  tags = { Name = "${local.prefix}-eip-natgw-${each.key}" }
+  tags = { Name = "${local.prefix}-eip-nat-${each.key}" }
 
   depends_on = [aws_internet_gateway.this]
 }
 
 resource "aws_nat_gateway" "this" {
-  for_each = local.nat_az_to_subnet
+  for_each = local.subnet_by_tier_az["public"]
 
   connectivity_type = "public"
-  allocation_id     = aws_eip.natgw[each.key].id
+  allocation_id     = aws_eip.nat[each.key].id
   subnet_id         = aws_subnet.this[each.value].id
 
-  tags = { Name = "${local.prefix}-natgw-${each.key}" }
+  tags = { Name = "${local.prefix}-nat-${each.key}" }
 
   depends_on = [aws_internet_gateway.this]
 }

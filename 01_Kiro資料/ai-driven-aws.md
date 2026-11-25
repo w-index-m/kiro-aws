@@ -312,6 +312,17 @@ Kiro に頼めば aws-cli の手順書(3 つ目)も書けるが、それは IaC 
 | IaC | CloudFormation | 乗る | `aws cloudformation deploy`、または変更セット(`create-change-set` → `execute-change-set`)。ここだけ反映の命令に aws-cli を使う |
 | IaC | AWS CDK | 乗る | `cdk diff` → `cdk deploy`(中身は CloudFormation) |
 
+上の 4 種のほかにも方法がある(整理して追記):
+
+| 種類 | 方法 | PR → CI/CD → 人の承認に乗るか |
+|---|---|---|
+| 直接変える | SDK のスクリプト(boto3 など)、Cloud Control API | 乗らない。一括変更・繰り返し作業向け |
+| IaC | AWS SAM(サーバーレス向け CloudFormation)、Pulumi(普通のプログラミング言語)、OpenTofu | 乗る |
+| パイプライン経由 | CI/CD(CodePipeline・GitHub Actions など) | Kiro は IaC を直して PR にするところまで。反映はパイプラインが行う(人の承認を挟める) |
+| サーバーの中 | Systems Manager(Run Command・Automation・State Manager)、Ansible(amazon.aws コレクション) | EC2 の OS 設定・パッチ当て向け |
+
+ブラウザの自動操作でコンソールを動かすやり方は、記録が残りにくく画面が変わると壊れるので避ける。
+
 「aws-cli で IaC を書く」ではない。IaC はコードで、aws-cli は作業前後の確認に使う(CloudFormation の反映だけは例外)。
 
 正しい流れ: Kiro が IaC を書き、差分(plan・変更セット)を出して PR → CI が検査 → 人が差分を読んで承認 →
