@@ -5,13 +5,13 @@
 
 | ファイル | 中身 |
 |---|---|
-| [`design-samples/aws-network/basic-design.md`](design-samples/aws-network/basic-design.md) | 基本設計書(目的と範囲・前提・構成図・通信の流れ・各サービスの設計・可用性・運用監視・試験・未決事項・改版履歴) |
-| [`design-samples/aws-network/parameter-sheet.md`](design-samples/aws-network/parameter-sheet.md) | パラメータシート(Markdown) |
+| `design-samples/aws-network/basic-design.md` | 基本設計書(目的と範囲・前提・構成図・通信の流れ・各サービスの設計・可用性・運用監視・試験・未決事項・改版履歴) |
+| `design-samples/aws-network/parameter-sheet.md` | パラメータシート(Markdown) |
 | `design-samples/aws-network/parameter-sheet.xlsx` | パラメータシート(Excel、11 シート、印刷は横向き・幅 1 ページ) |
-| [`design-samples/aws-network/check.md`](design-samples/aws-network/check.md) | 値の矛盾チェックの結果と、ルートの行き・戻りの計算 |
+| `design-samples/aws-network/check.md` | 値の矛盾チェックの結果と、ルートの行き・戻りの計算 |
 | `design-samples/aws-network/diagram.png` | 構成図(設計書の Mermaid を描いたもの) |
 
-![構成図](design-samples/aws-network/diagram.png)
+![構成図](出力/diagram.png)
 
 ## 構成の要点
 
