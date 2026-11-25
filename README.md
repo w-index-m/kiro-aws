@@ -130,9 +130,58 @@ ALB の HTTPS は ACM 証明書が必要(同一リージョン)。順番は VPC 
 
 Kiro のクラウドセッションは他社(Claude Code Web・Codex・Copilot cloud agent など)と同様の使い捨て隔離環境だが、**外への通信が既定で制限なし**(他は許可制/既定オフが多い)。詳細は `docs/source/ai-agent-sandboxes.md`。
 
+## 12. AWS WAF と Kiro 調査(追加資料)
+
+`waf-kiro/` に、別途用意された「AWS WAF と Kiro 調査」一式(スライド・設計書サンプル・Terraform サンプル・生成スクリプト)を取り込んでいます。
+内容はすべてサンプルで、2026-11-25 時点(スライド v1.26)の整理です。
+
+| パス | 内容 |
+|---|---|
+| `waf-kiro/docs/AWS_WAFとKiro調査.pptx` / `.pdf` | 調査スライド(42 枚) |
+| `waf-kiro/design/AWS_WAF_方式設計書_サンプル.xlsx` / `.md` | WAF 方式設計書(v1.3) |
+| `waf-kiro/design/AWS_WAF_画面一覧_入力サンプル.xlsx` | WAF 設定画面の入力サンプル |
+| `waf-kiro/design/AWS_VPC_DX_方式設計書_パラメータシート_サンプル.xlsx` / `.md` | VPC / Direct Connect 方式設計 |
+| `waf-kiro/terraform/` | VPC・DX・NACL/SG の Terraform サンプル(`terraform.tfvars` がパラメータシートに対応) |
+| `waf-kiro/tools/` | スライド生成 `make_deck.js`、設計書生成 `build_waf_design.py` |
+
+注意: `make_deck.js` は画像フォルダ(kiroimg)が無いとそのままでは動きません。スライド内の Kiro 画面は Kiro 公式のスクリーンショットなので、公開時は利用条件を確認してください。
+
+### WAF 設計の要点(`AWS_WAF_方式設計書_サンプル`)
+
+- **構成**: Internet → IGW → ALB(+ リージョナル Web ACL `sample-prd-waf-alb`)→ App → DB。既定アクションは Allow(ブロックリスト方式)
+- **ルール評価順**: 1 許可 IP(Allow)→ 2 レート制限(2,000 回/5 分で Block)→ 3 IP reputation → 4 Core rule set → 5 Known bad inputs → 6 SQL database
+- **導入**: 全ルールを Count で開始し、Sampled requests とログで誤検知を確認してから Block へ。ALB では本文検査が先頭 8KB 固定のため、アップロード系パスは Core rule set の `SizeRestrictions_BODY` から範囲を限定して除外
+- **WCU・料金**: 合計 約 1,128 WCU(上限 5,000、基本料金に含まれるのは 1,500 まで)。有料マネージドルールは追加時に自動購読になる
+- **ログ**: S3 の `aws-waf-logs-` で始まる名前へ出力、authorization / cookie をマスク、保管 90 日
+- **関連付け可能**: CloudFront・ALB・API Gateway(REST)・AppSync・App Runner・Verified Access など。NLB・GWLB は不可
+- **他機能との分担**: NACL/SG = L3/L4、WAF = L7、Network Firewall = L3〜L7(未採用)、Shield = DDoS、Firewall Manager = 複数アカウント一元管理
+- **マネージドルールの更新**: 既定の版は新版公開で自動では変わらず、切替の 1 週間前と当日に SNS 通知。IP reputation は版が無く頻繁に更新され通知対象外
+
+### Kiro に関する追加情報(スライド 19〜42)
+
+- **概要**: 2025-07-14 に AWS が発表したエージェント型 IDE。Code OSS 製で VS Code の設定・Open VSX 拡張と互換。Google / GitHub ログインなら AWS アカウント不要。IDE・CLI・Web がある
+- **料金(2026-11 時点、公式 kiro.dev/pricing)**:
+
+| プラン | 月額 | クレジット |
+|---|---|---|
+| Free | $0 | 50 |
+| Pro | $20 | 1,000 |
+| Pro+ | $40 | 2,000 |
+| Pro Max | $100 | 5,000 |
+| Power | $200 | 10,000 |
+| Enterprise | $20/席(2 席〜) | 500/席(共有) |
+
+  追加は 1 クレジット $0.04。Free はオープンウェイトモデルと Claude Sonnet 4.5 のみ
+- **注意点**: 仕様駆動の重い使い方では無料枠はすぐ尽きる / Open VSX のため Microsoft 製 C# 拡張は使えない / クラウド型のため NDA 案件では懸念の声あり
+- **他ツールとの違い**: Cursor・Claude Code は「依頼するとすぐ編集」、Kiro は「先に計画と仕様を固める」流れ。設計書を書いてから実装するインフラ系と相性が良さそう
+- **BYOK(自分の API キー)**: 公式対応は今回の調査では確認できず(GitHub に要望 #9367・#1409)
+- **他エディタとの関係**: VS Code 内では ACP(`kiro-cli acp`)とコミュニティ拡張、Visual Studio / Eclipse は Kiro CLI を併用、JetBrains は AI Assistant にカスタムエージェントとして追加
+- **WAF の設定変更を Kiro に頼む流れ**、**CLI(AWS CLI)の結果を Kiro で使う方法**、**Steering・Skills・Powers の違い**(誰が・いつ書くか)、**Power の守備範囲(Aurora DSQL の例)** はスライド 33〜41 を参照
+
 ## 元資料
 
 - `docs/source/ai-driven-aws.md` — AI ドリブンで AWS を作るなら(Kiro の節を含む全文・出典 URL 付き)
 - `docs/source/ai-agent-sandboxes.md` — AI エージェントのサンドボックス比較
+- `waf-kiro/` — AWS WAF と Kiro 調査(上記 12 章)
 
 nirvana-lab にはほかに Kiro 解説デッキ(`tools/decks/ai_driven_dev_kiro_deck.js`)、`docs/fw-migrate-ipcom-to-nfw.md`、`docs/aws-network-design-sample.md`、`docs/design-docs-from-describe.md` があります(未取り込み)。
