@@ -49,7 +49,7 @@ Kiro and AWS were researched twice, so `01`–`06` (AWS materials) and `07` (WAF
 
 - Links inside the READMEs and design docs of `01`–`06` point to locations in nirvana-lab and may be broken here (the originals are in that repository).
 - The Python tools need Python 3.10+. Excel output needs openpyxl; API-shape checks need botocore (otherwise those parts are skipped).
-- `07/tools/make_deck.js` does not run as-is without the image folder (kiroimg). The Kiro screens in the slides are official screenshots; check the terms of use before publishing.
+- `07/tools/make_deck.js` needs its Kiro screenshots, which are now bundled in `tools/kiroimg/` (extracted from the existing pptx), but the theme path still points to the original environment and may fail as-is. The Kiro screens in the slides are official screenshots; check the terms of use before publishing.
 
 ---
 
@@ -204,7 +204,7 @@ Kiro's cloud sessions are disposable isolated environments like those of other v
 | `07_AWS_WAFとKiro調査/terraform/` | Terraform for `02`'s layout (VPC, Network Firewall, edge routes, SG, DX, WAF; `terraform.tfvars` maps to `02`'s parameter sheet; unvalidated) |
 | `07_AWS_WAFとKiro調査/tools/` | Deck generator `make_deck.js`, design doc generator `build_waf_design.py` |
 
-Note: `make_deck.js` does not run as-is without the image folder (kiroimg). The Kiro screens in the slides are official screenshots; check terms of use before publishing.
+Note: `make_deck.js` needs its Kiro screenshots, which are now bundled in `tools/kiroimg/` (extracted from the existing pptx), but the theme path still points to the original environment and may fail as-is. The Kiro screens in the slides are official screenshots; check terms of use before publishing.
 
 ### WAF design highlights (`AWS_WAF_方式設計書_サンプル`)
 

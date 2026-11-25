@@ -511,7 +511,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiroの実画面(エディタ表示)", "参考:Kiro");
   const IW = 7.3, IH = IW * 562 / 804;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_ide.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro IDEの画面。左にビュー、中央にエディタ、右にチャットパネル、下にステータスバー", objectName: "Kiro screenshot" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_ide.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro IDEの画面。左にビュー、中央にエディタ、右にチャットパネル、下にステータスバー", objectName: "Kiro screenshot" });
   card(s, 8.15, 1.5, 4.58, 5.04, "Kiro real notes bg");
   s.addText(
     [
@@ -535,7 +535,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiroの実画面(チャットで作業中の例)", "参考:Kiro");
   const IW = 7.3, IH = IW * 428 / 746;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_chat.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiroでチャットが作業中の画面。チェックポイント、Cancel、入力欄、Autopilotのスイッチ、ステータスバー", objectName: "Kiro chat screenshot" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_chat.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiroでチャットが作業中の画面。チェックポイント、Cancel、入力欄、Autopilotのスイッチ、ステータスバー", objectName: "Kiro chat screenshot" });
   card(s, 8.15, 1.5, 4.58, 5.04, "Kiro chat notes bg");
   s.addText(
     [
@@ -556,7 +556,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiroの実画面(Explorerとチャットを開いた例)", "参考:Kiro");
   const IW = 7.3, IH = IW * 395 / 730;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_ide2.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro IDEの画面。左にファイルツリー、中央にショートカット一覧、下にターミナル、右にチャット", objectName: "Kiro screenshot 2" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_ide2.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro IDEの画面。左にファイルツリー、中央にショートカット一覧、下にターミナル、右にチャット", objectName: "Kiro screenshot 2" });
   card(s, 8.15, 1.5, 4.58, 5.04, "Kiro ide2 notes bg");
   s.addText(
     [
@@ -576,7 +576,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiroの利用形態:IDE・CLI・Web・Mobile", "参考:Kiro");
   const IH = 5.0, IW = IH * 856 / 750;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_web.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro公式ドキュメントの画面。前提条件と、IDE・CLI・Web・Mobileのタブ。Webタブの手順が表示されている", objectName: "Kiro web docs screenshot" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_web.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro公式ドキュメントの画面。前提条件と、IDE・CLI・Web・Mobileのタブ。Webタブの手順が表示されている", objectName: "Kiro web docs screenshot" });
   const X = 0.6 + IW + 0.25, Wd = 12.73 - X;
   card(s, X, 1.5, Wd, 5.0, "Kiro forms notes bg");
   s.addText(
@@ -619,7 +619,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiro Webのサインイン画面", "参考:Kiro");
   const IH = 5.0, IW = IH * 440 / 490;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_signin.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro Webのサインイン画面。Google、GitHub、Builder ID、Your organizationの4つから選ぶ", objectName: "Kiro signin screenshot" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_signin.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiro Webのサインイン画面。Google、GitHub、Builder ID、Your organizationの4つから選ぶ", objectName: "Kiro signin screenshot" });
   const X = 0.6 + IW + 0.3, Wd = 12.73 - X;
   card(s, X, 1.5, Wd, 5.0, "Kiro signin notes bg");
   s.addText(
@@ -643,7 +643,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiroの実画面(新規セッションの開始)", "参考:Kiro");
   const IH = 5.0, IW = IH * 710 / 584;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_new.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiroの新規セッション画面。What are we building today? と出て、Vibe CodingとCode with Specの2つから選ぶ", objectName: "Kiro new session screenshot" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_new.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiroの新規セッション画面。What are we building today? と出て、Vibe CodingとCode with Specの2つから選ぶ", objectName: "Kiro new session screenshot" });
   const X = 0.6 + IW + 0.3, Wd = 12.73 - X;
   card(s, X, 1.5, Wd, 5.0, "Kiro new notes bg");
   s.addText(
@@ -667,7 +667,7 @@ pres.addSection({ title: "参考:Kiro" });
 {
   const s = content("Kiroの実画面(#で文脈を指定する例)", "参考:Kiro");
   const IH = 5.0, IW = IH * 722 / 602;
-  s.addImage({ path: "/home/claude/work/kiroimg/kiro_hash.png", x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiroのチャット画面。#を入力すると、Files、Codebase、Docs、Git Diff、Terminalなどの文脈の候補が出る", objectName: "Kiro hash screenshot" });
+  s.addImage({ path: require("path").join(__dirname, "kiroimg", "kiro_hash.png"), x: 0.6, y: 1.5, w: IW, h: IH, altText: "Kiroのチャット画面。#を入力すると、Files、Codebase、Docs、Git Diff、Terminalなどの文脈の候補が出る", objectName: "Kiro hash screenshot" });
   const X = 0.6 + IW + 0.3, Wd = 12.73 - X;
   card(s, X, 1.5, Wd, 5.0, "Kiro hash notes bg");
   s.addText(
